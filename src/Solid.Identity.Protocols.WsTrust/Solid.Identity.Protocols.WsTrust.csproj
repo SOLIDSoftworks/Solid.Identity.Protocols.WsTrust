@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <RootNamespace>Solid.Identity</RootNamespace>
+    <LangVersion>8.0</LangVersion>
+    <Authors>SOLID Softworks</Authors>
+    <Copyright>© SOLID Softworks. All rights reserved.</Copyright>
+    <OutputTypeEx>library</OutputTypeEx>
+    <PackageProjectUrl>https://github.com/SOLIDSoftworks/Solid.Identity.Protocols.WsTrust</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/SOLIDSoftworks/Solid.Identity.Protocols.WsTrust</RepositoryUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <VersionPrefix></VersionPrefix>
+    <AssemblyVersion></AssemblyVersion>
+    <FileVersion></FileVersion>
+    <InformationalVersion></InformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.1.2" />
+    <PackageReference Include="System.Text.Json" Version="4.7.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Protocols.WsTrust" Version="0.0.1-preview" />
+    <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.19-beta" />
+    <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
+  </ItemGroup>
+
+</Project>

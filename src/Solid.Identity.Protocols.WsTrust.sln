@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Solid.Identity.Protocols.WsTrust", "Solid.Identity.Protocols.WsTrust\Solid.Identity.Protocols.WsTrust.csproj", "{BD9DD568-0BDD-4E45-86A8-6D560661DA44}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".repo", ".repo", "{A37ED134-44B7-4CBB-8E3C-0A22EDACD24B}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\LICENSE = ..\LICENSE
+		..\NuGet.Config = ..\NuGet.Config
+		..\README.md = ..\README.md
+		..\strongNameBypass.reg = ..\strongNameBypass.reg
+		..\strongNameBypass2.reg = ..\strongNameBypass2.reg
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".tests", ".tests", "{6654A9A8-AC22-459A-9ECF-8ED326FFC675}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Solid.Identity.Protocols.WsTrust.Tests", "Solid.Identity.Protocols.WsTrust.Tests\Solid.Identity.Protocols.WsTrust.Tests.csproj", "{DC41A41B-AE56-44C8-9601-029D7768F0EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD9DD568-0BDD-4E45-86A8-6D560661DA44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9DD568-0BDD-4E45-86A8-6D560661DA44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD9DD568-0BDD-4E45-86A8-6D560661DA44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9DD568-0BDD-4E45-86A8-6D560661DA44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DC41A41B-AE56-44C8-9601-029D7768F0EC} = {6654A9A8-AC22-459A-9ECF-8ED326FFC675}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EC67A6C0-37E7-4E97-B83D-A14CD395ECF7}
+	EndGlobalSection
+EndGlobal
