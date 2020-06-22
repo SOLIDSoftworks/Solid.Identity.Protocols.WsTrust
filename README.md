@@ -1,0 +1,1 @@
+# Solid.Identity.Protocols.WsTrust
