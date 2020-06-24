@@ -69,13 +69,13 @@ namespace Solid.Identity.Protocols.WsTrust
             return await CreateResponseAsync(request, descriptor, cancellationToken);
         }
 
-        public virtual ValueTask<WsTrustResponse> RenewAsync(ClaimsPrincipal principa, WsTrustRequest request, CancellationToken cancellationToken) 
+        public virtual ValueTask<WsTrustResponse> RenewAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken) 
             => throw new InvalidRequestException(ErrorMessages.ID3141, (request != null && request.RequestType != null ? request.RequestType : "Renew"));
 
-        public virtual ValueTask<WsTrustResponse> CancelAsync(ClaimsPrincipal principa, WsTrustRequest request, CancellationToken cancellationToken)
+        public virtual ValueTask<WsTrustResponse> CancelAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
             => throw new InvalidRequestException(ErrorMessages.ID3141, (request != null && request.RequestType != null ? request.RequestType : "Cancel"));
 
-        public virtual ValueTask<WsTrustResponse> ValidateAsync(ClaimsPrincipal principa, WsTrustRequest request, CancellationToken cancellationToken)
+        public virtual ValueTask<WsTrustResponse> ValidateAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
             => throw new InvalidRequestException(ErrorMessages.ID3141, (request != null && request.RequestType != null ? request.RequestType : "Validate"));
 
         protected virtual ValueTask<WsTrustResponse> CreateResponseAsync(WsTrustRequest request, RequestedSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)

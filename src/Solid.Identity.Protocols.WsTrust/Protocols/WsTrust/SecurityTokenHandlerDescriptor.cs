@@ -12,7 +12,6 @@ namespace Solid.Identity.Protocols.WsTrust
             TokenTypeIdentifiers = tokenTypes;
             Factory = factory;
         }
-
         public IEnumerable<string> TokenTypeIdentifiers { get; }
         public Func<IServiceProvider, SecurityTokenHandler> Factory { get; }
     }

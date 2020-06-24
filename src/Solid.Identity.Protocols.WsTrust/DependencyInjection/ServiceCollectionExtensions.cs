@@ -50,12 +50,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<UserNameSecurityTokenHandler>();
             services.TryAddSingleton<X509Certificate2SecurityTokenHandler>(); 
 
-            //services.PostConfigure<WsTrustOptions>(options =>
-            //{
-            //    if (options.DefaultSigningCredentials is X509SigningCredentials x509)
-            //        options.DefaultSigningCredentials = new X509CertificateSigningCredentials(x509.Certificate);
-            //});
-
             return services;
         }
     }

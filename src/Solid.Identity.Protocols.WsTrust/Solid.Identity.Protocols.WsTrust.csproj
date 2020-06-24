@@ -29,5 +29,9 @@
     <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.19-beta" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Protocols\WsTrust\WsTrust14\" />
+    <Folder Include="Protocols\WsTrust\WsTrustFeb2005\" />
+  </ItemGroup>
 
 </Project>
