@@ -20,7 +20,8 @@ namespace Solid.Identity.Protocols.WsTrust
         public string DefaultTokenType { get; set; } = WsTrustDefaults.DefaultTokenType;
         public TimeSpan MaxClockSkew { get; set; } = WsTrustDefaults.MaxClockSkew;
         public TimeSpan MaxTokenLifetime { get; set; } = WsTrustDefaults.MaxTokenLifetime;
-        public bool ValidateTopLevelSignatures { get; set; } = true;
-        internal List<SecurityTokenHandlerDescriptor> SecurityTokenHandlers { get; set; } = WsTrustDefaults.SecurityTokenHandlers;
+        internal Dictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
+        internal Dictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
+        internal List<SecurityTokenHandlerDescriptor> SecurityTokenHandlers { get; } = WsTrustDefaults.SecurityTokenHandlers;
     }
 }

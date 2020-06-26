@@ -29,10 +29,15 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                 builder
                     .AddPasswordValidator<TestPasswordValidator>()
                     .AddX509Certificate2Validator<TestX509Certificate2Validator>()
+
                     .AddSecurityTokenService<TestSecurityTokenService>()
                     .AddSecurityTokenHandler(new SamlSecurityTokenHandler(), SamlConstants.Saml11Namespace)
                     .AddSecurityTokenHandler(new Saml2SecurityTokenHandler(), Saml2Constants.Saml2TokenProfile11)
                     .AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers())
+
+                    .AddSha1()
+                    .AddSha1WithRsa()
+
                     .Configure(options =>
                     {
                         options.Issuer = "urn:Solid.Identity.Protocols.WsTrust.Tests.Host";
