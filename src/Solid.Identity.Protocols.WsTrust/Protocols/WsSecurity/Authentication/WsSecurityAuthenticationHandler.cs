@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -78,16 +79,14 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                     if(reader.IsWsSecurity())
                         reader.Read();
 
+                    var signature = null as Signature;
                     while (!reader.EOF)
                     {
                         if (reader.IsWsSecurityTimestamp())
                             HandleTimestamp(reader, soap);
                         else if (reader.IsXmlSignature())
-                        {
-                            var signature = ReadSignature(reader, soap);
-                            // consume element.
-
-                            //_ = XNode.ReadFrom(reader) as XElement;
+                        {                            
+                            signature = ReadSignature(reader, soap);
                         }
                         else if (reader.IsStartElement())
                         {
@@ -97,6 +96,17 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                         else if (reader.IsWsSecurityEndElement()) break;
                         else if (reader.NodeType == XmlNodeType.EndElement) reader.Read();
                         else throw new InvalidOperationException("Reader in invalid state.");
+                    }
+                    if(signature != null)
+                    {
+                        var uri = signature.KeyInfo.GetSecurityTokenReference()?.Reference.Uri;
+                        var key = results
+                            .Select(r => r.Token)
+                            .FirstOrDefault(t => $"#{t.Id}" == uri)
+                        ;
+                        if (key == null)
+                            throw new SecurityException($"Unable to find security token with id: '#{uri}'.");
+                        signature.Verify(key.SecurityKey);
                     }
                 }
 
@@ -117,10 +127,23 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
         private Signature ReadSignature(XmlReader reader, SoapContext soap)
         {
             WsSecurityLogMessages.LogSignatureElement(Logger, ref reader);
-            var serializer = new SecurityTokenDSigSerializer();
-            var signature = serializer.ReadSignature(reader);
 
-            return signature;
+            var buffer = soap.Request.CreateBufferedCopy((int)(soap.HttpContext.Request.ContentLength ?? 64 * 1024));
+            var message = buffer.CreateMessage();
+            using(var stream = new MemoryStream())
+            {
+                using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
+                    message.WriteMessage(writer);
+                stream.Position = 0;
+                using (var document = XmlReader.Create(stream))
+                {
+                    var serializer = new WsUtilityDSigSerializer(document);
+                    var signature = serializer.ReadSignature(reader);
+                    soap.Request = buffer.CreateMessage();
+                    return signature;
+                }
+            }
+
         }
 
         //private void AssertTimestamp(Timestamp timestamp)

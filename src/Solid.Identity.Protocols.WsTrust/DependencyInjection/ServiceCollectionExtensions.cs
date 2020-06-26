@@ -20,6 +20,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureWsTrust(this IServiceCollection services, Action<WsTrustOptions> configureOptions)
             => services.Configure(configureOptions);
 
+        //public static IServiceCollection AddCryptoProvider(this IServiceCo)
+
         public static IServiceCollection AddWsTrust13AsyncService(this IServiceCollection services, Action<WsTrustBuilder> configure)
             => services.AddWsTrustService<IWsTrust13AsyncContract, WsTrustService>(configure);
 

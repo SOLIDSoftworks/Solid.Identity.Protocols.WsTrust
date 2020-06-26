@@ -45,22 +45,6 @@ namespace Solid.Identity.Protocols.WsSecurity.Logging
             }
         }
 
-
-        //public static void LogTimestampElement(ILogger logger, XElement element)
-        //{
-        //    if (!logger.IsEnabled(LogLevel.Debug)) return;
-        //    LogTimestampElementValue(logger, element.ToString(), null);
-        //}
-
-        //public static readonly Action<ILogger, XElement> LogSecurityTokenElement = (logger, element) =>
-        //{
-        //    if (!logger.IsEnabled(LogLevel.Debug)) return;
-        //    LogSecurityTokenElementMetadata(logger, new SecurityTokenElementLogMessageState { Name = element.Name.LocalName, Namespace = element.Name.NamespaceName }, null);
-
-        //    if (!logger.IsEnabled(LogLevel.Trace)) return;
-        //    LogSecurityTokenValue(logger, element.ToString(), null);
-        //};
-
         public static readonly Action<ILogger, SecurityTokenHandler> LogSecurityTokenHandlerValidationAttempt = (logger, handler) =>
         {
             if (!logger.IsEnabled(LogLevel.Debug)) return;

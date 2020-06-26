@@ -18,7 +18,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
         {
         }
 
-        protected override ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        protected override ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsPrincipal principal, WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
         {
             var incoming = principal.Identity as ClaimsIdentity;
             var claims = new[]

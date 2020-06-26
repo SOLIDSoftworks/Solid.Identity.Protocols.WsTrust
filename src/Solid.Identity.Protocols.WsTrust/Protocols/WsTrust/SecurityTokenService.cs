@@ -19,7 +19,16 @@ using System.Xml;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
-    public abstract class SecurityTokenService
+    public abstract class SecurityTokenService : SecurityTokenService<Scope>
+    {
+        protected SecurityTokenService(SecurityTokenHandlerProvider securityTokenHandlerProvider, IOptions<WsTrustOptions> options, ISystemClock systemClock) 
+            : base(securityTokenHandlerProvider, options, systemClock)
+        {
+        }
+    }
+
+    public abstract class SecurityTokenService<TScope> : ISecurityTokenService
+        where TScope : Scope
     {
         protected WsTrustConstants Constants { get; private set; }
         public SecurityTokenHandlerProvider SecurityTokenHandlerProvider { get; }
@@ -53,7 +62,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (handler == null)
                 throw new NotSupportedException(ErrorMessages.GetFormattedMessage("ID4010", descriptor.TokenType));
 
-            descriptor.Subject = await CreateOutgoingSubjectAsync(principal, request, cancellationToken);
+            descriptor.Subject = await CreateOutgoingSubjectAsync(principal, request, scope, cancellationToken);
 
             var token = handler.CreateToken(descriptor);
             descriptor.Token = token;
@@ -111,25 +120,37 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<SecurityTokenHandler>(handler);
         }
 
-        protected virtual ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope)
+        protected virtual ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, TScope scope)
         {
-            var lifetime = GetTokenLifetime(request?.Lifetime);
+            var lifetime = GetTokenLifetime(request?.Lifetime, scope);
             var descriptor = new RequestedSecurityTokenDescriptor
             {
                 IssuedAt = lifetime.Created,
                 NotBefore = lifetime.Created,
                 Expires = lifetime.Expires,
                 Issuer = Options.Issuer,
-                SigningCredentials = CreateSigningCredentials(scope.SigningKey, scope.SigningAlgorithm ?? Options.DefaultSigningAlgorithm) ?? CreateSigningCredentials(Options.DefaultSigningKey, Options.DefaultSigningAlgorithm),
-                EncryptingCredentials = CreateEncryptingCredentials(scope.EncryptingKey, scope.EncryptingAlgorithm),
+                SigningCredentials = CreateSigningCredentials(scope),
+                EncryptingCredentials = CreateEncryptingCredentials(scope),
                 TokenType = request?.TokenType ?? Options.DefaultTokenType
             };
 
             return new ValueTask<RequestedSecurityTokenDescriptor>(descriptor);
         }
 
-        protected virtual SigningCredentials CreateSigningCredentials(SecurityKey key, SecurityAlgorithm algorithm)
+        protected virtual SigningCredentials CreateSigningCredentials(TScope scope)
         {
+            var key = scope.SigningKey;
+            var algorithm = scope.SigningAlgorithm;
+
+            if (algorithm == null)
+                algorithm = Options.DefaultSigningAlgorithm;
+
+            if (key == null)
+            {
+                key = Options.DefaultSigningKey;
+                algorithm = Options.DefaultSigningAlgorithm;
+            }
+
             if (key == null) return null;
             if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
             if (algorithm.Algorithm == null) throw new ArgumentNullException(nameof(algorithm.Algorithm));
@@ -137,8 +158,11 @@ namespace Solid.Identity.Protocols.WsTrust
             return new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
         }
 
-        protected virtual EncryptingCredentials CreateEncryptingCredentials(SecurityKey key, SecurityAlgorithm algorithm)
+        protected virtual EncryptingCredentials CreateEncryptingCredentials(TScope scope)
         {
+            var key = scope.EncryptingKey;
+            var algorithm = scope.EncryptingAlgorithm;
+
             if (key == null) return null;
             if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
             if (algorithm.Algorithm == null) throw new ArgumentNullException(nameof(algorithm.Algorithm));
@@ -189,9 +213,9 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask();
         }
 
-        protected abstract ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken);
+        protected abstract ValueTask<TScope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken);
 
-        protected abstract ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken);
+        protected abstract ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsPrincipal principal, WsTrustRequest request, TScope scope, CancellationToken cancellationToken);
 
         /// <summary>
         /// Gets the lifetime of the issued token.
@@ -205,7 +229,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// C           E                   C                   E
         /// </summary>
         /// <param name="requestLifetime">The requestor's desired life time.</param>
-        protected virtual Lifetime GetTokenLifetime(Lifetime requestLifetime)
+        protected virtual Lifetime GetTokenLifetime(Lifetime requestLifetime, TScope scope)
         {
             DateTime created;
             DateTime expires;

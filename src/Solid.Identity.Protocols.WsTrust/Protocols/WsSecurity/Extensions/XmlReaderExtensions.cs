@@ -13,7 +13,6 @@ namespace System.Xml
         public static bool IsWsSecurityEndElement(this XmlReader reader) => reader.IsEndElement("Security", WsSecurityConstants.WsSecurity10.Namespace);
         public static bool IsWsSecurityTimestamp(this XmlReader reader) => reader.IsStartElement("Timestamp", WsUtilityConstants.WsUtility10.Namespace);
         public static bool IsXmlSignature(this XmlReader reader) => reader.IsStartElement("Signature", XmlSignatureConstants.Namespace);
-
         public static bool IsEndElement(this XmlReader reader, string localName, string ns)
         {
             if (reader.NodeType != XmlNodeType.EndElement) return false;

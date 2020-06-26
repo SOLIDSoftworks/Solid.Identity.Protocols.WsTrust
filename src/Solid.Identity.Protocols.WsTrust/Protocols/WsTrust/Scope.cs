@@ -71,10 +71,10 @@ namespace Solid.Identity.Protocols.WsTrust
         /// </summary>
         public virtual string AppliesToAddress { get; set; }
         
-        /// <summary>
-        /// Gets or sets the replyTo address of the relying party.
-        /// </summary>
-        public virtual string ReplyToAddress { get; set; }
+        ///// <summary>
+        ///// Gets or sets the replyTo address of the relying party.
+        ///// </summary>
+        //public virtual string ReplyToAddress { get; set; }
 
         /// <summary>
         /// The signing <see cref="SecurityKey"/> for the relying party.
@@ -96,15 +96,15 @@ namespace Solid.Identity.Protocols.WsTrust
         /// </summary>
         public virtual SecurityAlgorithm EncryptingAlgorithm { get; private set; }
 
-        /// <summary>
-        /// Gets or sets the property which determines if issued symmetric keys must
-        /// be encrypted by <see cref="Scope.EncryptingCredentials"/>.
-        /// </summary>
-        public virtual bool SymmetricKeyEncryptionRequired { get; set; }
+        ///// <summary>
+        ///// Gets or sets the property which determines if issued symmetric keys must
+        ///// be encrypted by <see cref="EncryptingKey"/>.
+        ///// </summary>
+        //public virtual bool SymmetricKeyEncryptionRequired { get; set; }
 
         /// <summary>
         /// Gets or sets the property which determines if issued security tokens must
-        /// be encrypted by <see cref="Scope.EncryptingCredentials"/>.
+        /// be encrypted by <see cref="EncryptingKey"/>.
         /// </summary>
         public virtual bool TokenEncryptionRequired { get; set; }
 

@@ -121,7 +121,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             };
             using (var certificate = new X509Certificate2(Convert.FromBase64String(data.CertificateBase64)))
             {
-                var client = _fixture.CreateWsTrust13CertificateClient(certificate);
+                var client = _fixture.CreateWsTrust13CertificateClient(certificate, securityAlgorithmSuite: data.SecurityAlgorithmSuite);
 
                 var exception = null as Exception;
                 var token = null as SecurityToken;
@@ -191,19 +191,42 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             new GetTokenWithCertificateData
             {
                 Subject = "test.valid",
-                CertificateBase64 = Certificates.ValidBase64
+                CertificateBase64 = Certificates.ValidBase64,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+            },
+            new GetTokenWithCertificateData
+            {
+                Subject = "test.valid",
+                CertificateBase64 = Certificates.ValidBase64,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.expired",
                 CertificateBase64 = Certificates.ExpiredBase64,
-                ShouldFail = true
+                ShouldFail = true,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+            },
+            new GetTokenWithCertificateData
+            {
+                Subject = "test.expired",
+                CertificateBase64 = Certificates.ExpiredBase64,
+                ShouldFail = true,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.invalid",
                 CertificateBase64 = Certificates.InvalidBase64,
-                ShouldFail = true
+                ShouldFail = true,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+            },
+            new GetTokenWithCertificateData
+            {
+                Subject = "test.invalid",
+                CertificateBase64 = Certificates.InvalidBase64,
+                ShouldFail = true,
+                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             }
         };
 
@@ -235,13 +258,15 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         {
             public string CertificateBase64 { get; set; }
             public bool ShouldFail { get; set; }
-            public string Subject { get; internal set; }
+            public string Subject { get; set; }
+            public SecurityAlgorithmSuite SecurityAlgorithmSuite { get; set; }
 
             void IXunitSerializable.Serialize(IXunitSerializationInfo info)
             {
                 info.AddValue(nameof(Subject), Subject);
                 info.AddValue(nameof(ShouldFail), ShouldFail);
                 info.AddValue(nameof(CertificateBase64), CertificateBase64);
+                info.AddValue(nameof(SecurityAlgorithmSuite), SecurityAlgorithmSuite?.ToString());
             }
 
             void IXunitSerializable.Deserialize(IXunitSerializationInfo info)
@@ -249,6 +274,9 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 Subject = info.GetValue<string>(nameof(Subject));
                 ShouldFail = info.GetValue<bool>(nameof(ShouldFail));
                 CertificateBase64 = info.GetValue<string>(nameof(CertificateBase64));
+                var securityAlgorithmSuite = info.GetValue<string>(nameof(SecurityAlgorithmSuite));
+                if (securityAlgorithmSuite != null)
+                    SecurityAlgorithmSuite = typeof(SecurityAlgorithmSuite).GetProperty(securityAlgorithmSuite, BindingFlags.Static | BindingFlags.Public).GetValue(null) as SecurityAlgorithmSuite;
             }
         }
 

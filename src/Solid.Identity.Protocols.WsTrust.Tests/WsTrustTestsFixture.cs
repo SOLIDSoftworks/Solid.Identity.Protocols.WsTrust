@@ -74,19 +74,23 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             ;
         }
         
-        public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate, XmlWriterSettings writerSettings)
+        public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate, XmlWriterSettings writerSettings = null, SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var properties = new Dictionary<string, object>
             {
-                { "certificate", certificate },
-                { "settings", writerSettings }
+                { "certificate", certificate }
             };
+            if (writerSettings != null)
+                properties.Add("settings", writerSettings);
+            if (securityAlgorithmSuite != null)
+                properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
+
             var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
             var channel = CreateChannel<IWSTrustChannelContract>(context);
             return channel;
         }
 
-        public IWSTrustChannelContract CreateWsTrust13IssuedTokenClient(string subject, string clientTokenType = Saml2TokenType, string appliesTo = "urn:test", string issuer = "test_issuer")
+        public IWSTrustChannelContract CreateWsTrust13IssuedTokenClient(string subject, string clientTokenType = Saml2TokenType, string appliesTo = "urn:test", string issuer = "test_issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var identity = CreateIdentity(subject);
             var token = CreateSecurityToken(identity, clientTokenType, appliesTo, issuer);
@@ -96,33 +100,37 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 { "token", token },
                 { "handler", handler }
             };
+            if (securityAlgorithmSuite != null)
+                properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
             var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
             var channel = CreateChannel<IWSTrustChannelContract>(context);
             return channel;
         }
 
-        public IWSTrustChannelContract CreateWsTrust13UserNameClient(string userName, string password, string appliesTo = "urn:test", string issuer = "test_issuer")
+        public IWSTrustChannelContract CreateWsTrust13UserNameClient(string userName, string password, string appliesTo = "urn:test", string issuer = "test_issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var properties = new Dictionary<string, object>
             {
                 { "userName", userName },
                 { "password", password }
             };
+            if (securityAlgorithmSuite != null)
+                properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
             var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
             var channel = CreateChannel<IWSTrustChannelContract>(context);
             return channel;
         }
 
-        public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate)
-        {
-            var properties = new Dictionary<string, object>
-            {
-                { "certificate", certificate }
-            };
-            var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
-            var channel = CreateChannel<IWSTrustChannelContract>(context);
-            return channel;
-        }
+        //public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate)
+        //{
+        //    var properties = new Dictionary<string, object>
+        //    {
+        //        { "certificate", certificate }
+        //    };
+        //    var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
+        //    var channel = CreateChannel<IWSTrustChannelContract>(context);
+        //    return channel;
+        //}
 
         public T ConvertSecurityToken<T>(SecurityToken token)
             where T : SecurityToken => ConvertSecurityToken(token, typeof(T)) as T;
@@ -155,11 +163,11 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         {
             var binding = null as Binding;
             if (context.Properties.TryGetValue("handler", out var handler))
-                binding = CreateFederationBinding(handler as SecurityTokenHandler);
+                binding = CreateFederationBinding(handler as SecurityTokenHandler, context);
             else if (context.Properties.TryGetValue("userName", out _) && context.Properties.TryGetValue("password", out _))
-                binding = CreateBinding(MessageCredentialType.UserName);
+                binding = CreateBinding(MessageCredentialType.UserName, context);
             else if (context.Properties.TryGetValue("certificate", out _))
-                binding = CreateBinding(MessageCredentialType.Certificate);
+                binding = CreateBinding(MessageCredentialType.Certificate, context);
 
             binding.ReceiveTimeout = TimeSpan.FromMinutes(10);
             binding = binding.WithoutTransportSecurity();
@@ -169,20 +177,28 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             return binding;
         }
 
-        private Binding CreateBinding(MessageCredentialType credentialType)
+        private Binding CreateBinding(MessageCredentialType credentialType, SoapChannelCreationContext context)
         {
             var binding = new WS2007HttpBinding(SecurityMode.TransportWithMessageCredential);
             binding.Security.Message.EstablishSecurityContext = false;
             binding.Security.Message.ClientCredentialType = credentialType;
+
+            if(context.Properties.TryGetValue("securityAlgorithmSuite", out var value) && value is SecurityAlgorithmSuite securityAlgorithmSuite)
+                binding.Security.Message.AlgorithmSuite = securityAlgorithmSuite;
+
             return binding;
         }
 
-        private Binding CreateFederationBinding(SecurityTokenHandler handler)
+        private Binding CreateFederationBinding(SecurityTokenHandler handler, SoapChannelCreationContext context)
         {
             var binding = new WS2007FederationHttpBinding(WSFederationHttpSecurityMode.TransportWithMessageCredential);
             binding.Security.Message.IssuedKeyType = SecurityKeyType.BearerKey;
             binding.Security.Message.EstablishSecurityContext = false;
             binding.Security.Message.IssuedTokenType = handler.GetTokenTypeIdentifiers().FirstOrDefault();
+
+            if (context.Properties.TryGetValue("securityAlgorithmSuite", out var value) && value is SecurityAlgorithmSuite securityAlgorithmSuite)
+                binding.Security.Message.AlgorithmSuite = securityAlgorithmSuite;
+
             return binding;
         }
 
