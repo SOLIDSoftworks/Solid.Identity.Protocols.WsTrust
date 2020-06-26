@@ -7,7 +7,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Xml;
 using Solid.Extensions.AspNetCore.Soap;
 using Solid.Identity.Protocols.WsSecurity.Abstractions;
-using Solid.Identity.Protocols.WsSecurity.Factories;
 using Solid.Identity.Protocols.WsSecurity.Logging;
 using Solid.Identity.Protocols.WsSecurity.Signatures;
 using Solid.Identity.Protocols.WsSecurity.Xml;
@@ -33,7 +32,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
         private static readonly XName Signature = XName.Get("Signature", XmlSignatureConstants.Namespace);
 
         private ISoapContextAccessor _soapContextAccessor;
-        private TokenValidationParametersFactory _tokenValidationParametersFactory;
+        private ITokenValidationParametersFactory _tokenValidationParametersFactory;
         private SecurityTokenHandlerProvider _securityTokenHandlerProvider;
         private WsTrustOptions _wsTrust;
 
@@ -41,7 +40,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
             ISoapContextAccessor soapContextAccessor,
             IOptionsMonitor<WsTrustOptions> wsTrustOptionsMonitor,
             IServiceProvider services,
-            TokenValidationParametersFactory tokenValidationParametersFactory,
+            ITokenValidationParametersFactory tokenValidationParametersFactory,
             SecurityTokenHandlerProvider securityTokenHandlerProvider,
 
             IOptionsMonitor<AuthenticationSchemeOptions> options, 
@@ -214,7 +213,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
                 WsSecurityLogMessages.LogSecurityTokenHandlerValidationAttempt(Logger, handler);
 
-                var parameters = _tokenValidationParametersFactory.Create();
+                var parameters = await _tokenValidationParametersFactory.CreateAsync();
                 var user = null as ClaimsPrincipal;
                 var token = null as SecurityToken;
 

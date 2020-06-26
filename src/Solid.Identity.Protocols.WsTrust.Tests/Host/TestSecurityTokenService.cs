@@ -32,6 +32,6 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
         }
 
         protected override ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
-            => new ValueTask<Scope>(new Scope(request.AppliesTo.EndpointReference.Uri.AbsoluteUri));
+            => new ValueTask<Scope>(new Scope(request.AppliesTo.EndpointReference.Uri));
     }
 }

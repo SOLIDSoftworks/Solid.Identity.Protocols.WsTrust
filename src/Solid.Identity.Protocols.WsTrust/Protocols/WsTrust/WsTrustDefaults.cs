@@ -20,7 +20,7 @@ namespace Solid.Identity.Protocols.WsTrust
         internal static List<SecurityTokenHandlerDescriptor> SecurityTokenHandlers => new List<SecurityTokenHandlerDescriptor>
         {
             new SecurityTokenHandlerDescriptor(Enumerable.Empty<string>(), p => p.GetService<UserNameSecurityTokenHandler>()),
-            new SecurityTokenHandlerDescriptor(Enumerable.Empty<string>(), p => p.GetService<X509Certificate2SecurityTokenHandler>())
+            new SecurityTokenHandlerDescriptor(Enumerable.Empty<string>(), p => p.GetService<X509SecurityTokenHandler>())
         };
     }
 }

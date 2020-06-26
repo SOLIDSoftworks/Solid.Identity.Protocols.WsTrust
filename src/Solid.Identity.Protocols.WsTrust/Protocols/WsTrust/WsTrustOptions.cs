@@ -5,12 +5,14 @@ using System.Text;
 using System.Linq;
 using Solid.Identity.Tokens;
 using Solid.Identity.Protocols.WsSecurity.Tokens;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
     public class WsTrustOptions
     {
         public string Issuer { get; set; }
+        public Uri DefaultAppliesTo { get; set; }
         public SecurityKey DefaultSigningKey { get; set; }
         public SecurityAlgorithm DefaultSigningAlgorithm { get; set; } = SecurityAlgorithm.Asymmetric.RsaSha256;
         public EncryptingCredentials DefaultEncryptingCredentials { get; set; }
@@ -20,8 +22,12 @@ namespace Solid.Identity.Protocols.WsTrust
         public string DefaultTokenType { get; set; } = WsTrustDefaults.DefaultTokenType;
         public TimeSpan MaxClockSkew { get; set; } = WsTrustDefaults.MaxClockSkew;
         public TimeSpan MaxTokenLifetime { get; set; } = WsTrustDefaults.MaxTokenLifetime;
-        internal Dictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
-        internal Dictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
-        internal List<SecurityTokenHandlerDescriptor> SecurityTokenHandlers { get; } = WsTrustDefaults.SecurityTokenHandlers;
+        public bool UseEmbeddedCertificatesForValidation { get; set; } = false;
+        internal IDictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
+        internal IDictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
+        internal IDictionary<Uri, IRelyingParty> RelyingParties { get; } = new Dictionary<Uri, IRelyingParty>();
+        // TODO: change this to Uri key?
+        internal IDictionary<string, IIdentityProvider> IdentityProviders { get; } = new Dictionary<string, IIdentityProvider>();
+        internal IList<SecurityTokenHandlerDescriptor> SecurityTokenHandlers { get; } = WsTrustDefaults.SecurityTokenHandlers;
     }
 }

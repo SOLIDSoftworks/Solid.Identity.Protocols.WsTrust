@@ -17,7 +17,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
 
         protected override ValueTask<bool> IsValidAsync(X509Certificate2 certificate)
         {
-            var now = _clock.UtcNow; ;
+            var now = _clock.UtcNow;
             return new ValueTask<bool>(certificate.NotBefore <= now && now <= certificate.NotAfter && certificate.Subject == "CN=test.valid");
         }
     }

@@ -6,9 +6,9 @@ using System.Text;
 
 namespace Solid.Identity.Protocols.WsSecurity.Tokens
 {
-    internal class X509Certificate2SecurityToken : SecurityToken
+    internal class X509SecurityToken : SecurityToken
     {
-        public X509Certificate2SecurityToken(string id, X509Certificate2 certificate)
+        public X509SecurityToken(string id, X509Certificate2 certificate)
         {
             Id = id;
             Certificate = certificate;

@@ -15,17 +15,17 @@ using System.Xml;
 
 namespace Solid.Identity.Protocols.WsSecurity.Tokens
 {
-    internal class X509Certificate2SecurityTokenHandler : AsyncSecurityTokenHandler
+    internal class X509SecurityTokenHandler : AsyncSecurityTokenHandler
     {
-        private ILogger<X509Certificate2SecurityTokenHandler> _logger;
+        private ILogger<X509SecurityTokenHandler> _logger;
         private IX509Certificate2Validator _validator;
 
-        public X509Certificate2SecurityTokenHandler(ILogger<X509Certificate2SecurityTokenHandler> logger, IX509Certificate2Validator validator = null)
+        public X509SecurityTokenHandler(ILogger<X509SecurityTokenHandler> logger, IX509Certificate2Validator validator = null)
         {
             _logger = logger;
             _validator = validator;
         }
-        public override Type TokenType => typeof(X509Certificate2SecurityToken);
+        public override Type TokenType => typeof(X509SecurityToken);
 
         public override SecurityToken ReadToken(XmlReader reader, TokenValidationParameters validationParameters) => ReadToken(reader);
 
@@ -63,13 +63,13 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
         public override SecurityToken ReadToken(string tokenString) => ReadX509Certificate2Token(tokenString);
         public override SecurityToken ReadToken(XmlReader reader) => ReadX509Certificate2Token(reader);
 
-        public X509Certificate2SecurityToken ReadX509Certificate2Token(string tokenString)
+        public X509SecurityToken ReadX509Certificate2Token(string tokenString)
         {
             using (var reader = CreateReader(tokenString))
                 return ReadX509Certificate2Token(reader);
         }
 
-        public X509Certificate2SecurityToken ReadX509Certificate2Token(XmlReader reader)
+        public X509SecurityToken ReadX509Certificate2Token(XmlReader reader)
         {
             if (!CanReadToken(reader))
                 throw new Exception("Token read exception");
@@ -79,7 +79,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
             var bytes = Convert.FromBase64String(base64);
             var certificate = new X509Certificate2(bytes);
 
-            return new X509Certificate2SecurityToken(id, certificate);
+            return new X509SecurityToken(id, certificate);
         }
 
         public override ValueTask<SecurityTokenValidationResult> ValidateTokenAsync(string securityToken, TokenValidationParameters validationParameters)

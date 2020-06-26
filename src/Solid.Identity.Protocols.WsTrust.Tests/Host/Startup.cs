@@ -13,6 +13,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using Solid.Identity.Tokens;
 
 namespace Solid.Identity.Protocols.WsTrust.Tests.Host
 {
@@ -37,6 +38,24 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
 
                     .AddSha1()
                     .AddSha1WithRsa()
+
+                    .AddIdentityProvider("urn:test:issuer", idp =>
+                    {
+                        using (var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.ClientCertificateBase64)))
+                        {
+                            var publicCertificate = new X509Certificate2(certificate.Export(X509ContentType.Cert));
+                            idp.AllowedRelyingParties.Add(new Uri("urn:tests"));
+                            idp.SecurityKey = new X509SecurityKey(publicCertificate);
+                        }
+                    })
+                    .AddRelyingParty("urn:tests", party =>
+                    {
+                        var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));
+                        party.Name = "My test relying party";
+                        party.SigningKey = new X509SecurityKey(certificate);
+                        party.SigningAlgorithm = SecurityAlgorithm.Asymmetric.RsaSha256;
+                        party.TokenType = Saml2Constants.Saml2TokenProfile11;
+                    })
 
                     .Configure(options =>
                     {

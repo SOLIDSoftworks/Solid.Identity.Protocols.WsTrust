@@ -25,7 +25,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// Initializes an instance of <see cref="Scope"/>
         /// </summary>
         /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
-        public Scope(string appliesToAddress)
+        public Scope(Uri appliesToAddress)
             : this(appliesToAddress, null, null)
         {
         }
@@ -35,7 +35,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// </summary>
         /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
         /// <param name="signingKey">The signing credentials for the relying party.</param>
-        public Scope(string appliesToAddress, SecurityKey signingKey)
+        public Scope(Uri appliesToAddress, SecurityKey signingKey)
             : this(appliesToAddress, signingKey, null)
         {
         }
@@ -45,7 +45,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// </summary>
         /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
         /// <param name="signingKey">The signing credentials for the relying party.</param>
-        public Scope(string appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm)
+        public Scope(Uri appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm)
             : this(appliesToAddress, signingKey, null, null, null)
         {
         }
@@ -56,7 +56,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
         /// <param name="signingKey">The signing credentials for the relying party.</param>
         /// <param name="encryptingKey"> The encrypting credentials for the relying party.</param>
-        public Scope(string appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm, SecurityKey encryptingKey, SecurityAlgorithm encryptingAlgorithm)
+        public Scope(Uri appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm, SecurityKey encryptingKey, SecurityAlgorithm encryptingAlgorithm)
         {
             AppliesToAddress = appliesToAddress;
             SigningKey = signingKey;
@@ -69,7 +69,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// <summary>
         /// Gets or sets the appliesTo address of the relying party.
         /// </summary>
-        public virtual string AppliesToAddress { get; set; }
+        public virtual Uri AppliesToAddress { get; set; }
         
         ///// <summary>
         ///// Gets or sets the replyTo address of the relying party.

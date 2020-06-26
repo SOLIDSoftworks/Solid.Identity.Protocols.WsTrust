@@ -38,7 +38,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             {
                 RequestType = RequestTypes.Issue,
                 KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:test")
+                AppliesTo = new EndpointReference("urn:tests")
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", clientTokenType: clientTokenType);
             var token = client.Issue(request, out _);
@@ -56,7 +56,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 {
                     RequestType = RequestTypes.Issue,
                     KeyType = KeyTypes.Bearer,
-                    AppliesTo = new EndpointReference("urn:test")
+                    AppliesTo = new EndpointReference("urn:tests")
                 };
                 var settings = new XmlWriterSettings { Indent = true };
                 var client = _fixture.CreateWsTrust13CertificateClient(certificate, settings);
@@ -83,7 +83,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             {
                 RequestType = RequestTypes.Issue,
                 KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:test")
+                AppliesTo = new EndpointReference("urn:tests")
             };
             var client = _fixture.CreateWsTrust13UserNameClient(data.UserName, data.Password);
 
@@ -117,7 +117,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             {
                 RequestType = RequestTypes.Issue,
                 KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:test")
+                AppliesTo = new EndpointReference("urn:tests")
             };
             using (var certificate = new X509Certificate2(Convert.FromBase64String(data.CertificateBase64)))
             {
@@ -142,7 +142,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 else
                 {
                     Assert.Null(exception);
-                    Assert.NotNull(token);
+                    Assert.NotNull(token); 
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             {
                 RequestType = RequestTypes.Issue,
                 KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:test"),
+                AppliesTo = new EndpointReference("urn:tests"),
                 TokenType = data.TokenTypeIdentifier
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName");

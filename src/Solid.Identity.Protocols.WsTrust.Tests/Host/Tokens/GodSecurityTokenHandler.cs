@@ -50,7 +50,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
             {
                 new Claim(ClaimTypes.NameIdentifier, god.Name),
                 new Claim(ClaimTypes.AuthenticationMethod, System.IdentityModel.Tokens.AuthenticationMethods.Unspecified),
-                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime)
+                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime),
+                new Claim("urn:god:type", god.Type)
             };
             var identity = new ClaimsIdentity(claims, "omnipotence");
 
@@ -79,25 +80,40 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
         
         public override SecurityToken ReadToken(XmlReader reader)
         {
-            var content = reader.ReadElementContentAsString();
-            return ReadToken(content);
+            var type = reader.GetAttribute("ValueType");
+            var name = reader.ReadElementContentAsString();
+            return new GodSecurityToken
+            {
+                Name = name, 
+                Type = type
+            };
         }
 
         public override SecurityToken ReadToken(string tokenString)
-            => new GodSecurityToken { Name = tokenString };
+        {
+            using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(tokenString)))
+            using (var reader = XmlReader.Create(stream))
+                return ReadToken(reader);
+        }
 
         public override SecurityToken CreateToken(SecurityTokenDescriptor tokenDescriptor)
         {
             var name = tokenDescriptor.Subject.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return new GodSecurityToken { Name = name };
+            var type = tokenDescriptor.Subject.FindFirst("urn:god:type")?.Value ?? "urn:god";
+            return new GodSecurityToken { Name = name, Type = type};
         }
 
         public override string WriteToken(SecurityToken token)
         {
             var god = token as GodSecurityToken;
             if (god == null) throw new ArgumentException("Invalid god token");
-
-            return god.Name;
+            using (var stream = new MemoryStream())
+            {
+                using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
+                    WriteToken(writer, token);
+                stream.Position = 0;
+                using (var reader = new StreamReader(stream)) return reader.ReadToEnd();
+            }
         }
 
         public override void WriteToken(XmlWriter writer, SecurityToken token)
@@ -106,8 +122,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
             if (god == null) throw new ArgumentException("Invalid god token");
 
             writer.WriteStartElement("god", "token", "urn:god");
-            writer.WriteAttributeString("ValueType", "urn:god");
-            writer.WriteValue(WriteToken(token));
+            writer.WriteAttributeString("ValueType", god.Type);
+            writer.WriteValue(god.Name);
             writer.WriteEndElement();
         }
     }
@@ -127,5 +143,6 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
         public override DateTime ValidTo => DateTime.MaxValue;
 
         public string Name { get; set; }
+        public string Type { get; set; }
     }
 }
