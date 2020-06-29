@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols.WsTrust;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -15,7 +16,7 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             _services = services;
         }
-        public SecurityTokenService Create(WsTrustConstants constants)
+        public ISecurityTokenService Create(WsTrustConstants constants)
         {
             var sts = _services.GetService<SecurityTokenService>();
             sts.Initialize(constants);

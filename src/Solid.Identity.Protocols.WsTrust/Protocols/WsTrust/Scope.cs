@@ -1,11 +1,14 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Text;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
+    // TODO: add better xml documenation
 
     /// <summary>
     /// Defines one class which contains all the relying party related information.
@@ -13,58 +16,20 @@ namespace Solid.Identity.Protocols.WsTrust
     /// </summary>
     public class Scope
     {
-        /// <summary>
-        /// Initializes an instance of <see cref="Scope"/>
-        /// </summary>
-        public Scope()
-            : this(null, null, null)
+        public Scope(ClaimsIdentity subject, IRelyingParty party)
         {
+            AppliesToAddress = party.AppliesTo;
+            SigningKey = party.SigningKey;
+            SigningAlgorithm = party.SigningAlgorithm;
+            EncryptingKey = party.EncryptingKey;
+            EncryptingAlgorithm = party.EncryptingAlgorithm;
+
+            Subject = subject;
+            RelyingParty = party;
         }
 
-        /// <summary>
-        /// Initializes an instance of <see cref="Scope"/>
-        /// </summary>
-        /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
-        public Scope(Uri appliesToAddress)
-            : this(appliesToAddress, null, null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes an instance of <see cref="Scope"/>
-        /// </summary>
-        /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
-        /// <param name="signingKey">The signing credentials for the relying party.</param>
-        public Scope(Uri appliesToAddress, SecurityKey signingKey)
-            : this(appliesToAddress, signingKey, null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes an instance of <see cref="Scope"/>
-        /// </summary>
-        /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
-        /// <param name="signingKey">The signing credentials for the relying party.</param>
-        public Scope(Uri appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm)
-            : this(appliesToAddress, signingKey, null, null, null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes an instance of <see cref="Scope"/>
-        /// </summary>
-        /// <param name="appliesToAddress">The appliesTo address of the relying party.</param>
-        /// <param name="signingKey">The signing credentials for the relying party.</param>
-        /// <param name="encryptingKey"> The encrypting credentials for the relying party.</param>
-        public Scope(Uri appliesToAddress, SecurityKey signingKey, SecurityAlgorithm signingAlgorithm, SecurityKey encryptingKey, SecurityAlgorithm encryptingAlgorithm)
-        {
-            AppliesToAddress = appliesToAddress;
-            SigningKey = signingKey;
-            SigningAlgorithm = signingAlgorithm;
-            EncryptingKey = encryptingKey;
-            EncryptingAlgorithm = encryptingAlgorithm;
-            Properties = new Dictionary<string, object>();
-        }
+        public ClaimsIdentity Subject { get; }
+        public IRelyingParty RelyingParty { get; }
 
         /// <summary>
         /// Gets or sets the appliesTo address of the relying party.
@@ -94,7 +59,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// <summary>
         /// The encrypting <see cref="SecurityAlgorithm"/> for the relying party.
         /// </summary>
-        public virtual SecurityAlgorithm EncryptingAlgorithm { get; private set; }
+        public virtual SecurityAlgorithm EncryptingAlgorithm { get; set; }
 
         ///// <summary>
         ///// Gets or sets the property which determines if issued symmetric keys must
@@ -107,10 +72,5 @@ namespace Solid.Identity.Protocols.WsTrust
         /// be encrypted by <see cref="EncryptingKey"/>.
         /// </summary>
         public virtual bool TokenEncryptionRequired { get; set; }
-
-        /// <summary>
-        /// Gets the properties bag to extend the object.
-        /// </summary>
-        public virtual Dictionary<string, object> Properties { get; } 
     }
 }

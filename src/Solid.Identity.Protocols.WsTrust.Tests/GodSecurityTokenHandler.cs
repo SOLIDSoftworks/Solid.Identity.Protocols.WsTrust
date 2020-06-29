@@ -39,10 +39,10 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, god.Name),
-                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethods.Unspecified),
-                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime),
-                new Claim("urn:god:type", god.Type)
+                new Claim(ClaimTypes.NameIdentifier, god.Name, ClaimValueTypes.String, god.Issuer),
+                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethods.Unspecified, ClaimValueTypes.String, god.Issuer),
+                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime, god.Issuer),
+                new Claim("urn:god:type", god.Type, ClaimValueTypes.String, god.Issuer)
             };
             var identity = new ClaimsIdentity(claims, "omnipotence");
 
@@ -113,6 +113,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         public override DateTime ValidFrom => DateTime.UtcNow;
 
         public override DateTime ValidTo => DateTime.UtcNow.AddHours(12);
+
+        public string Issuer => "urn:alpha:and:omega";
 
         public string Name { get; set; }
         public string Type { get; set; }

@@ -48,10 +48,10 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, god.Name),
-                new Claim(ClaimTypes.AuthenticationMethod, System.IdentityModel.Tokens.AuthenticationMethods.Unspecified),
-                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime),
-                new Claim("urn:god:type", god.Type)
+                new Claim(ClaimTypes.NameIdentifier, god.Name, ClaimValueTypes.String, token.Issuer),
+                new Claim(ClaimTypes.AuthenticationMethod, System.IdentityModel.Tokens.AuthenticationMethods.Unspecified, god.Name, ClaimValueTypes.String, token.Issuer),
+                new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime, token.Issuer),
+                new Claim("urn:god:type", god.Type, god.Name, ClaimValueTypes.String, token.Issuer)
             };
             var identity = new ClaimsIdentity(claims, "omnipotence");
 

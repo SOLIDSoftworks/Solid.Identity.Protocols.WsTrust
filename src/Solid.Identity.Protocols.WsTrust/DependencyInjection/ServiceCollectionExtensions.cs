@@ -44,11 +44,13 @@ namespace Microsoft.Extensions.DependencyInjection
                 ;
                 var builder = new WsTrustBuilder(service);
                 configure(builder);
-                builder.AddSecurityTokenService<DefaultSecurityTokenService>();
+                builder.AddSecurityTokenService<SecurityTokenService>();
                 builder.AddTokenValidationParametersFactory<WsTrustTokenValidationParametersFactory>();
                 builder.AddIdentityProviderStore<DefaultIdentityProviderStore>();
                 builder.AddRelyingPartyStore<DefaultRelyingPartyStore>();
             });
+            services.TryAddTransient<IncomingClaimsMapper>();
+            services.TryAddTransient<OutgoingSubjectFactory>();
             services.TryAddSingleton<WsTrustSerializerFactory>();
             services.TryAddSingleton<SecurityTokenServiceFactory>();
             services.TryAddSingleton<SecurityTokenHandlerProvider>();

@@ -1,4 +1,5 @@
 ﻿using Microsoft.IdentityModel.Protocols.WsTrust;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -38,7 +39,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// <summary>
         /// The <see cref="SecurityTokenService"/> object which should process <see cref="RequestMessage"/>.
         /// </summary>
-        public SecurityTokenService SecurityTokenService { get; set; }
+        public ISecurityTokenService SecurityTokenService { get; set; }
 
         /// <summary>
         /// The WS-Trust namespace uri defining the schema for the request and response messages.

@@ -17,27 +17,35 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
-    public abstract class SecurityTokenService : SecurityTokenService<Scope>
-    {
-        protected SecurityTokenService(SecurityTokenHandlerProvider securityTokenHandlerProvider, IOptions<WsTrustOptions> options, ISystemClock systemClock) 
-            : base(securityTokenHandlerProvider, options, systemClock)
-        {
-        }
-    }
-
-    public abstract class SecurityTokenService<TScope> : ISecurityTokenService
-        where TScope : Scope
+    public class SecurityTokenService : ISecurityTokenService
     {
         protected WsTrustConstants Constants { get; private set; }
-        public SecurityTokenHandlerProvider SecurityTokenHandlerProvider { get; }
-        public WsTrustOptions Options { get; }
-        public ISystemClock SystemClock { get; }
+        protected IRelyingPartyStore RelyingParties { get; }
+        protected IncomingClaimsMapper Mapper { get; }
+        protected OutgoingSubjectFactory SubjectFactory { get; }
+        protected SecurityTokenHandlerProvider SecurityTokenHandlerProvider { get; }
+        protected WsTrustOptions Options { get; }
+        protected ISystemClock SystemClock { get; }
+        protected ILogger Logger { get; }
 
-        protected SecurityTokenService(SecurityTokenHandlerProvider securityTokenHandlerProvider, IOptions<WsTrustOptions> options, ISystemClock systemClock)
+        public SecurityTokenService(
+            IRelyingPartyStore relyingParties, 
+            IncomingClaimsMapper mapper, 
+            OutgoingSubjectFactory subjectFactory, 
+            SecurityTokenHandlerProvider securityTokenHandlerProvider, 
+            ILoggerFactory loggerFactory,
+            IOptions<WsTrustOptions> options, 
+            ISystemClock systemClock)
         {
+            Logger = loggerFactory.CreateLogger(GetType().FullName);
+
+            RelyingParties = relyingParties;
+            Mapper = mapper;
+            SubjectFactory = subjectFactory;
             SecurityTokenHandlerProvider = securityTokenHandlerProvider;
             Options = options.Value;
             SystemClock = systemClock;
@@ -63,7 +71,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (handler == null)
                 throw new NotSupportedException(ErrorMessages.GetFormattedMessage("ID4010", descriptor.TokenType));
 
-            descriptor.Subject = await CreateOutgoingSubjectAsync(principal, request, scope, cancellationToken);
+            descriptor.Subject = await CreateOutgoingSubjectAsync(request, scope, cancellationToken);
 
             var token = handler.CreateToken(descriptor);
             descriptor.Token = token;
@@ -121,7 +129,7 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<SecurityTokenHandler>(handler);
         }
 
-        protected virtual ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, TScope scope)
+        protected virtual ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope)
         {
             var lifetime = GetTokenLifetime(request?.Lifetime, scope);
             var descriptor = new RequestedSecurityTokenDescriptor
@@ -138,7 +146,7 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<RequestedSecurityTokenDescriptor>(descriptor);
         }
 
-        protected virtual SigningCredentials CreateSigningCredentials(TScope scope)
+        protected virtual SigningCredentials CreateSigningCredentials(Scope scope)
         {
             var key = scope.SigningKey;
             var algorithm = scope.SigningAlgorithm;
@@ -159,7 +167,7 @@ namespace Solid.Identity.Protocols.WsTrust
             return new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
         }
 
-        protected virtual EncryptingCredentials CreateEncryptingCredentials(TScope scope)
+        protected virtual EncryptingCredentials CreateEncryptingCredentials(Scope scope)
         {
             var key = scope.EncryptingKey;
             var algorithm = scope.EncryptingAlgorithm;
@@ -214,9 +222,33 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask();
         }
 
-        protected abstract ValueTask<TScope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken);
+        protected virtual async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
+        {
+            var subject = await SubjectFactory.CreateOutgoingSubjectAsync(scope.Subject, scope.RelyingParty);
+            return subject;
+        }
 
-        protected abstract ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsPrincipal principal, WsTrustRequest request, TScope scope, CancellationToken cancellationToken);
+        protected virtual async ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        {
+            if (request.AppliesTo == null)
+            {
+                if (Options.DefaultAppliesTo == null)
+                    throw new InvalidRequestException("AppliesTo not specified");
+                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo.ToString()));
+            }
+            var appliesTo = request.AppliesTo.EndpointReference.Uri;
+            var party = await RelyingParties.GetRelyingPartyAsync(appliesTo);
+            var identity = ClaimsPrincipal.PrimaryIdentitySelector(principal.Identities);
+            var claims = await MapIncomingClaimsAsync(principal.Claims);
+            var user = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);
+            var scope = new Scope(user, party);
+            return scope;
+        }
+
+        protected virtual async ValueTask<IEnumerable<Claim>> MapIncomingClaimsAsync(IEnumerable<Claim> claims)
+        {
+            return claims;
+        }
 
         /// <summary>
         /// Gets the lifetime of the issued token.
@@ -230,7 +262,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// C           E                   C                   E
         /// </summary>
         /// <param name="requestLifetime">The requestor's desired life time.</param>
-        protected virtual Lifetime GetTokenLifetime(Lifetime requestLifetime, TScope scope)
+        protected virtual Lifetime GetTokenLifetime(Lifetime requestLifetime, Scope scope)
         {
             DateTime created;
             DateTime expires;

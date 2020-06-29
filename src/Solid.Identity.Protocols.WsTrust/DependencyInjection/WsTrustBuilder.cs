@@ -158,5 +158,33 @@ namespace Solid.Identity.DependencyInjection
             Configure(o => o.IdentityProviders[id] = idp);
             return this;
         }
+
+        public WsTrustBuilder AddIncomingClaimMapper<TMapper>()
+            where TMapper : class, IClaimMapper
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimMapper, TMapper>());
+            return this;
+        }
+
+        public WsTrustBuilder AddIncomingClaimMapper<TMapper>(Func<IServiceProvider, TMapper> factory)
+            where TMapper : class, IClaimMapper
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimMapper, TMapper>(factory));
+            return this;
+        }
+
+        public WsTrustBuilder AddClaimStore<TStore>()
+            where TStore : class, IClaimStore
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimStore, TStore>());
+            return this;
+        }
+
+        public WsTrustBuilder AddClaimStore<TStore>(Func<IServiceProvider, TStore> factory)
+            where TStore : class, IClaimStore
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimStore, TStore>(factory));
+            return this;
+        }
     }
 }

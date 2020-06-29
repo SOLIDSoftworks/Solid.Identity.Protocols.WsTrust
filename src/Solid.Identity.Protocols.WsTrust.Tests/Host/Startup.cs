@@ -31,7 +31,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                     .AddPasswordValidator<TestPasswordValidator>()
                     .AddX509Certificate2Validator<TestX509Certificate2Validator>()
 
-                    .AddSecurityTokenService<TestSecurityTokenService>()
+                    //.AddSecurityTokenService<TestSecurityTokenService>()
                     .AddSecurityTokenHandler(new SamlSecurityTokenHandler(), SamlConstants.Saml11Namespace)
                     .AddSecurityTokenHandler(new Saml2SecurityTokenHandler(), Saml2Constants.Saml2TokenProfile11)
                     .AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers())

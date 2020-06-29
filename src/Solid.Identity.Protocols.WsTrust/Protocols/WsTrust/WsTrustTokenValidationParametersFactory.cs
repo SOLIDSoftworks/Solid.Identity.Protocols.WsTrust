@@ -60,16 +60,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 {
                     _logger.LogDebug($"Finding issuer signing key for '{securityToken?.Issuer}'.");
                     if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return null;
-                    //var debug = null as IEnumerable<SecurityKey>;
-                    //if (securityToken is SamlSecurityToken saml)
-                    //    debug = GetIncludedSecurityKeys(saml.Assertion.Signature);
-                    //if (securityToken is Saml2SecurityToken saml2)
-                    //    debug = GetIncludedSecurityKeys(saml2.Assertion.Signature);
                     return new[] { idp.SecurityKey };
-
-                    //// TODO: maybe add some options for more of these resolver methods
-
-                    //return new[] { securityToken?.SecurityKey };
                 }
             };
             parameters.ValidateAudience = true;
@@ -95,18 +86,18 @@ namespace Solid.Identity.Protocols.WsTrust
 
             return parameters;
         }
-        private IEnumerable<SecurityKey> GetIncludedSecurityKeys(Signature signature)
-        {
-            if (signature?.KeyInfo == null) return null;
-            return signature
-                .KeyInfo
-                .X509Data
-                .SelectMany(data => data.Certificates)
-                .Select(base64 => Convert.FromBase64String(base64))
-                .Select(raw => new X509Certificate2(raw))
-                .Select(cert => new X509SecurityKey(cert))
-                .ToArray()
-            ;
-        }
+        //private IEnumerable<SecurityKey> GetIncludedSecurityKeys(Signature signature)
+        //{
+        //    if (signature?.KeyInfo == null) return null;
+        //    return signature
+        //        .KeyInfo
+        //        .X509Data
+        //        .SelectMany(data => data.Certificates)
+        //        .Select(base64 => Convert.FromBase64String(base64))
+        //        .Select(raw => new X509Certificate2(raw))
+        //        .Select(cert => new X509SecurityKey(cert))
+        //        .ToArray()
+        //    ;
+        //}
     }
 }

@@ -32,6 +32,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Middleware
             if (result.Failure != null)
                 throw result.Failure;
             if(result.Succeeded)
+                // TODO: map incoming claims
                 context.User = result.Principal;
             await Next(context);
 
