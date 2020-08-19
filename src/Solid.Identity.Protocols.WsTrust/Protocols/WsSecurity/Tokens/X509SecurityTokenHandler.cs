@@ -18,9 +18,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
     internal class X509SecurityTokenHandler : AsyncSecurityTokenHandler
     {
         private ILogger<X509SecurityTokenHandler> _logger;
-        private IX509Certificate2Validator _validator;
+        private IX509Validator _validator;
 
-        public X509SecurityTokenHandler(ILogger<X509SecurityTokenHandler> logger, IX509Certificate2Validator validator = null)
+        public X509SecurityTokenHandler(ILogger<X509SecurityTokenHandler> logger, IX509Validator validator = null)
         {
             _logger = logger;
             _validator = validator;

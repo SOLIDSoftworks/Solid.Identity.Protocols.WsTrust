@@ -34,9 +34,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Abstractions
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, subject),
-                new Claim(ClaimTypes.Name, userName),
-                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethod),
+                new Claim(ClaimTypes.NameIdentifier, subject, ClaimValueTypes.String),
+                new Claim(ClaimTypes.Name, userName, ClaimValueTypes.String),
+                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethod, ClaimValueTypes.String),
                 AuthenticationInstantClaim.Now
             };
 

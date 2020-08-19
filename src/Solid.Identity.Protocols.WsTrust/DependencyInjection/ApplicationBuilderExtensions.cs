@@ -21,14 +21,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static IApplicationBuilder UseWsTrust13AsyncService(this IApplicationBuilder builder, PathString pathPrefix)
         {
-            var cryptoProvider = builder.ApplicationServices.GetService<ICryptoProvider>();
-            CryptoProviderFactory.Default.CustomCryptoProvider = cryptoProvider;
+            builder.ApplicationServices.InitializeCustomCryptoProvider();
 
             builder.MapSoapService<IWsTrust13AsyncContract>(pathPrefix, app =>
             {
                 app.UseMiddleware<WsSecurityMiddleware>();
             });
             return builder;
+        }
+
+        internal static void InitializeCustomCryptoProvider(this IServiceProvider services)
+        {
+            var cryptoProvider = services.GetService<ICryptoProvider>();
+            CryptoProviderFactory.Default.CustomCryptoProvider = cryptoProvider;
         }
     }
 }

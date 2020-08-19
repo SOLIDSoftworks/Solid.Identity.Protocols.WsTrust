@@ -8,6 +8,6 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
     public interface IRelyingPartyStore
     {
         ValueTask<IEnumerable<IRelyingParty>> GetRelyingPartiesAsync();
-        ValueTask<IRelyingParty> GetRelyingPartyAsync(Uri appliesTo);
+        ValueTask<IRelyingParty> GetRelyingPartyAsync(string appliesTo);
     }
 }

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Solid.Identity.Protocols.WsSecurity.Abstractions
 {
-    public abstract class X509Certificate2Validator : IX509Certificate2Validator
+    public abstract class X509Validator : IX509Validator
     {
         public static readonly string AuthenticationType = "X509";
         public static readonly string AuthenticationMethod = "http://schemas.microsoft.com/ws/2008/06/identity/authenticationmethod/x509";

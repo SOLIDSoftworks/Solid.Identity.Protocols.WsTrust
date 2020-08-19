@@ -1,12 +1,13 @@
 ﻿using Microsoft.IdentityModel.Protocols.WsSecurity;
+using Microsoft.IdentityModel.Xml;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Solid.Identity.Protocols.WsSecurity.Xml
 {
-    class WsSecurityTokenReference 
+    class WsSecurityTokenReference : SecurityTokenReference
     {
-        public WsSecurityReference Reference { get; set; }
+        public Reference Reference { get; set; }
     }
 }

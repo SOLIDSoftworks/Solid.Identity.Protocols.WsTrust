@@ -49,6 +49,7 @@ namespace Solid.Identity.Protocols.WsTrust
         protected virtual async ValueTask<Message> ProcessCoreAsync(Message requestMessage, string requestAction, string responseAction, WsTrustVersion version)
         {
             var constants = GetWsTrustConstants(version);
+
             var trace = new WsTrustMessageInformation
             {
                 RequestAction = requestAction,
@@ -78,6 +79,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual ValueTask ValidateDispatchContextAsync(DispatchContext context)
         {
+            // TODO: validate dispatch context
+            // write this with tests
             return new ValueTask();
         }
 
@@ -117,7 +120,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 RequestAction = requestAction,
                 ResponseAction = responseAction,
                 TrustNamespace = constants.Namespace,
-                SecurityTokenService = _stsFactory.Create(constants), 
+                SecurityTokenService = _stsFactory.Create(constants),
                 MessageVersion = soapContext.MessageVersion,
                 CancellationToken = soapContext.CancellationToken
             };

@@ -234,7 +234,7 @@ namespace Solid.Identity.Protocols.WsTrust
             {
                 if (Options.DefaultAppliesTo == null)
                     throw new InvalidRequestException("AppliesTo not specified");
-                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo.ToString()));
+                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
             }
             var appliesTo = request.AppliesTo.EndpointReference.Uri;
             var party = await RelyingParties.GetRelyingPartyAsync(appliesTo);

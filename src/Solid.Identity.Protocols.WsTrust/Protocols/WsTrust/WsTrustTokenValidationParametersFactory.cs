@@ -56,48 +56,61 @@ namespace Solid.Identity.Protocols.WsTrust
                 ValidateIssuer = true,
 
                 ClockSkew = _options.MaxClockSkew,
-                IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>
-                {
-                    _logger.LogDebug($"Finding issuer signing key for '{securityToken?.Issuer}'.");
-                    if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return null;
-                    return new[] { idp.SecurityKey };
-                }
-            };
-            parameters.ValidateAudience = true;
-            parameters.ValidateIssuer = true;
-
-            parameters.IssuerValidator = (issuer, token, _) =>
-            {
-                _logger.LogDebug($"Validating issuer '{issuer}'.");
-                if (idps.ContainsKey(issuer)) return issuer;
-                throw new SecurityException($"Unable to validate issuer '{issuer}'");
+                IssuerSigningKeyResolver = ResolveIssuerSigningKeys,
+                IssuerValidator = ValidateIssuer,
+                AudienceValidator = ValidateAudiences
             };
 
-            parameters.AudienceValidator = (audiences, token, _) =>
+            parameters.PropertyBag = new Dictionary<string, object>
             {
-                if (!idps.TryGetValue(token?.Issuer, out var idp)) return false;
-
-                if (!idp.RestrictRelyingParties) return true;
-
-                _logger.LogDebug($"Validating audience for issuer '{token?.Issuer}'.");
-                var intersect = idp.AllowedRelyingParties.Select(p => p.AbsoluteUri).Intersect(audiences);
-                return intersect.Any();
+                { "idps", idps },
+                { "rps", rps }
             };
 
             return parameters;
         }
-        //private IEnumerable<SecurityKey> GetIncludedSecurityKeys(Signature signature)
-        //{
-        //    if (signature?.KeyInfo == null) return null;
-        //    return signature
-        //        .KeyInfo
-        //        .X509Data
-        //        .SelectMany(data => data.Certificates)
-        //        .Select(base64 => Convert.FromBase64String(base64))
-        //        .Select(raw => new X509Certificate2(raw))
-        //        .Select(cert => new X509SecurityKey(cert))
-        //        .ToArray()
-        //    ;
-        //}
+
+        protected virtual IEnumerable<SecurityKey> ResolveIssuerSigningKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)
+        {
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("idps", out var obj)) return Enumerable.Empty<SecurityKey>();
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return Enumerable.Empty<SecurityKey>();
+
+            _logger.LogDebug($"Finding issuer signing key for '{securityToken?.Issuer}'.");
+            if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return null;
+            return new[] { idp.SecurityKey };
+        }
+
+        protected virtual string ValidateIssuer(string issuer, SecurityToken token, TokenValidationParameters parameters)
+        {
+            if (!parameters.ValidateIssuer) return issuer;
+
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("idps", out var obj)) throw new SecurityException($"Unable to validate issuer '{issuer}'");
+
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) throw new SecurityException($"Unable to validate issuer '{issuer}'");
+
+            _logger.LogDebug($"Validating issuer '{issuer}'.");
+            if (idps.ContainsKey(issuer)) return issuer;
+            throw new SecurityException($"Unable to validate issuer '{issuer}'");
+        }
+
+        protected virtual bool ValidateAudiences(IEnumerable<string> audiences, SecurityToken token, TokenValidationParameters parameters)
+        {
+            if (!parameters.ValidateAudience) return true;
+
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("idps", out var obj)) return false;
+
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return false;
+
+            if (!idps.TryGetValue(token?.Issuer, out var idp)) return false;
+
+            if (!idp.RestrictRelyingParties) return true;
+
+            _logger.LogDebug($"Validating audience for issuer '{token?.Issuer}'.");
+            var intersect = idp.AllowedRelyingParties.Intersect(audiences);
+            return intersect.Any();
+        }
     }
 }

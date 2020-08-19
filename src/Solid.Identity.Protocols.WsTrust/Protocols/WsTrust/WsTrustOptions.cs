@@ -12,7 +12,7 @@ namespace Solid.Identity.Protocols.WsTrust
     public class WsTrustOptions
     {
         public string Issuer { get; set; }
-        public Uri DefaultAppliesTo { get; set; }
+        public string DefaultAppliesTo { get; set; }
         public SecurityKey DefaultSigningKey { get; set; }
         public SecurityAlgorithm DefaultSigningAlgorithm { get; set; } = SecurityAlgorithm.Asymmetric.RsaSha256;
         public EncryptingCredentials DefaultEncryptingCredentials { get; set; }
@@ -25,7 +25,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public bool UseEmbeddedCertificatesForValidation { get; set; } = false;
         internal IDictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
         internal IDictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
-        internal IDictionary<Uri, IRelyingParty> RelyingParties { get; } = new Dictionary<Uri, IRelyingParty>();
+        internal IDictionary<string, IRelyingParty> RelyingParties { get; } = new Dictionary<string, IRelyingParty>();
         // TODO: change this to Uri key?
         internal IDictionary<string, IIdentityProvider> IdentityProviders { get; } = new Dictionary<string, IIdentityProvider>();
         internal IList<SecurityTokenHandlerDescriptor> SecurityTokenHandlers { get; } = WsTrustDefaults.SecurityTokenHandlers;

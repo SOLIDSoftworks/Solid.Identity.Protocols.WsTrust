@@ -104,7 +104,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                             .FirstOrDefault(t => $"#{t.Id}" == uri)
                         ;
                         if (key == null)
-                            throw new SecurityException($"Unable to find security token with id: '#{uri}'.");
+                            throw new SecurityException($"Unable to find security token '#{uri}'.");
+                        if (key.SecurityKey == null)
+                            throw new SecurityException($"There is no security key associated with token '#{uri}'.");
                         signature.Verify(key.SecurityKey);
                     }
                 }

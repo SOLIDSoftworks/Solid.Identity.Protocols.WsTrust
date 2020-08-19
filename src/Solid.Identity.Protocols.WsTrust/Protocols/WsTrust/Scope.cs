@@ -34,7 +34,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// <summary>
         /// Gets or sets the appliesTo address of the relying party.
         /// </summary>
-        public virtual Uri AppliesToAddress { get; set; }
+        public virtual string AppliesToAddress { get; set; }
         
         ///// <summary>
         ///// Gets or sets the replyTo address of the relying party.

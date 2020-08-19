@@ -10,9 +10,9 @@ namespace Solid.Identity.Protocols.WsTrust
 {
     public class RelyingParty : IRelyingParty
     {
-        public string Id => AppliesTo?.AbsoluteUri;
-        public Uri AppliesTo { get; internal set; }
-        public Uri ReplyTo { get; set; }
+        public string Id => AppliesTo ?? throw new ArgumentNullException(nameof(AppliesTo));
+        public string AppliesTo { get; internal set; }
+        public string ReplyTo { get; set; }
         public SecurityKey SigningKey { get; set; }
         public SecurityAlgorithm SigningAlgorithm { get; set; }
         public SecurityKey EncryptingKey { get; set; }

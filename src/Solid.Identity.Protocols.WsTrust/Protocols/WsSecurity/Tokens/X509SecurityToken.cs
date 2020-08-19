@@ -12,6 +12,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
         {
             Id = id;
             Certificate = certificate;
+            SecurityKey = new X509SecurityKey(certificate);
         }
 
         public override string Id { get; }
@@ -19,9 +20,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
 
         public override string Issuer => Certificate.Issuer;
 
-        public override SecurityKey SecurityKey => new X509SecurityKey(Certificate);
+        public override SecurityKey SecurityKey { get; }
 
-        public override SecurityKey SigningKey { get => null; set { } }
+        public override SecurityKey SigningKey { get; set; }
 
         public override DateTime ValidFrom => Certificate.NotBefore;
 

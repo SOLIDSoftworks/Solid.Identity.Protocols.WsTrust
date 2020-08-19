@@ -9,8 +9,8 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
     public interface IRelyingParty
     {
         string Id { get; }
-        Uri AppliesTo { get; }
-        Uri ReplyTo { get; }
+        string AppliesTo { get; }
+        string ReplyTo { get; }
         SecurityKey SigningKey { get; }
         SecurityAlgorithm SigningAlgorithm { get; }
         SecurityKey EncryptingKey { get; }

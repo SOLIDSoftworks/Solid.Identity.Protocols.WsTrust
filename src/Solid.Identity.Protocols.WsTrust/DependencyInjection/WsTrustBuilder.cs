@@ -8,6 +8,7 @@ using Solid.Identity.Protocols.WsSecurity.Abstractions;
 using Solid.Identity.Protocols.WsSecurity.Tokens;
 using Solid.Identity.Protocols.WsTrust;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
+using Solid.Identity.Protocols.WsTrust.WsTrust13;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,18 +19,30 @@ namespace Solid.Identity.DependencyInjection
 {
     public class WsTrustBuilder
     {
-        internal WsTrustBuilder(SoapServiceBuilder soap)
+        internal WsTrustBuilder(IServiceCollection services)
         {
-            Soap = soap;
-            Services = soap.Services;
+            Services = services;
         }
 
-        public SoapServiceBuilder Soap { get; }
         public IServiceCollection Services { get; }
 
         public WsTrustBuilder Configure(Action<WsTrustOptions> configureOptions)
         {
             Services.Configure(configureOptions);
+            return this;
+        }
+
+        public WsTrustBuilder AddWsTrust13AsyncContract()
+        {
+            Services.TryAddSingleton<WsTrustService>();
+            Services.AddSingletonSoapService<IWsTrust13AsyncContract>(p => p.GetService<WsTrustService>());
+            return this;
+        }
+
+        public WsTrustBuilder AddWsTrust13SyncContract()
+        {
+            Services.TryAddSingleton<WsTrustService>();
+            Services.AddSingletonSoapService<IWsTrust13AsyncContract>(p => p.GetService<WsTrustService>());
             return this;
         }
 
@@ -68,10 +81,10 @@ namespace Solid.Identity.DependencyInjection
             return this;
         }
 
-        public WsTrustBuilder AddX509Certificate2Validator<TX509Certificate2Validator>()
-            where TX509Certificate2Validator : class, IX509Certificate2Validator
+        public WsTrustBuilder AddX509Validator<TX509Validator>()
+            where TX509Validator : class, IX509Validator
         {
-            Services.TryAddSingleton<IX509Certificate2Validator, TX509Certificate2Validator>();
+            Services.TryAddSingleton<IX509Validator, TX509Validator>();
             return this;
         }
 
@@ -84,10 +97,10 @@ namespace Solid.Identity.DependencyInjection
             return this;
         }
 
-        public WsTrustBuilder AddSha1()
+        public WsTrustBuilder AddSha1Support()
             => AddSupportedHashAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1", _ => SHA1.Create());
 
-        public WsTrustBuilder AddSha1WithRsa()
+        public WsTrustBuilder AddSha1WithRsaSupport()
             => AddSupportedSignatureAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1", (services, key) =>
             {
                 var logger = services.GetRequiredService<ILogger<RsaSha1SignatureProvider>>();
@@ -136,14 +149,14 @@ namespace Solid.Identity.DependencyInjection
             return this;
         }
 
-        public WsTrustBuilder AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
-        {
-            if (!Uri.TryCreate(appliesTo, UriKind.RelativeOrAbsolute, out var uri))
-                throw new ArgumentException("AppliesTo must be a valid Uri.", nameof(appliesTo));
-            return AddRelyingParty(uri, configureRelyingParty);
-        }
+        //public WsTrustBuilder AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
+        //{
+        //    if (!Uri.TryCreate(appliesTo, UriKind.RelativeOrAbsolute, out var uri))
+        //        throw new ArgumentException("AppliesTo must be a valid Uri.", nameof(appliesTo));
+        //    return AddRelyingParty(uri, configureRelyingParty);
+        //}
 
-        public WsTrustBuilder AddRelyingParty(Uri appliesTo, Action<RelyingParty> configureRelyingParty)
+        public WsTrustBuilder AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
         {
             var party = new RelyingParty { AppliesTo = appliesTo };
             configureRelyingParty(party);

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Solid.Identity.Protocols.WsSecurity.Abstractions
 {
-    public interface IX509Certificate2Validator
+    public interface IX509Validator
     {
         ValueTask<ClaimsPrincipal> ValidateCertificateAsync(X509Certificate2 certificate);
     }

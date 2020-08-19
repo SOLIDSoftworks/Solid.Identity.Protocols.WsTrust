@@ -20,7 +20,7 @@ namespace Solid.Identity.Protocols.WsTrust.Defaults
 
         public ValueTask<IEnumerable<IRelyingParty>> GetRelyingPartiesAsync() => new ValueTask<IEnumerable<IRelyingParty>>(Options.RelyingParties.Values);
 
-        public ValueTask<IRelyingParty> GetRelyingPartyAsync(Uri appliesTo)
+        public ValueTask<IRelyingParty> GetRelyingPartyAsync(string appliesTo)
         {
             if (Options.RelyingParties.TryGetValue(appliesTo, out var rp)) return new ValueTask<IRelyingParty>(rp);
             return new ValueTask<IRelyingParty>();

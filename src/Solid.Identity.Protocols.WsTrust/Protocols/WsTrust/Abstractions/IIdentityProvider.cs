@@ -11,7 +11,7 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         string Name { get; }
         SecurityKey SecurityKey { get;}
         bool RestrictRelyingParties { get; }
-        IList<Uri> AllowedRelyingParties { get; }
+        IList<string> AllowedRelyingParties { get; }
         bool Enabled { get; }
     }
 }

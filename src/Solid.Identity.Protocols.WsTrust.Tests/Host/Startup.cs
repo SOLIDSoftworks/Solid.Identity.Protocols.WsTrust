@@ -24,27 +24,29 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
             IdentityModelEventSource.ShowPII = true;
 
             services.AddLogging(builder => builder.AddDebug());
-            services.AddWsTrust13AsyncService(builder =>
+            services.AddWsTrust(builder =>
             {
                 var god = new Tokens.GodSecurityTokenHandler();
                 builder
+                    .AddWsTrust13AsyncContract()
+
                     .AddPasswordValidator<TestPasswordValidator>()
-                    .AddX509Certificate2Validator<TestX509Certificate2Validator>()
+                    .AddX509Validator<TestX509Validator>()
 
                     //.AddSecurityTokenService<TestSecurityTokenService>()
                     .AddSecurityTokenHandler(new SamlSecurityTokenHandler(), SamlConstants.Saml11Namespace)
                     .AddSecurityTokenHandler(new Saml2SecurityTokenHandler(), Saml2Constants.Saml2TokenProfile11)
                     .AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers())
 
-                    .AddSha1()
-                    .AddSha1WithRsa()
+                    .AddSha1Support()
+                    .AddSha1WithRsaSupport()
 
                     .AddIdentityProvider("urn:test:issuer", idp =>
                     {
                         using (var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.ClientCertificateBase64)))
                         {
                             var publicCertificate = new X509Certificate2(certificate.Export(X509ContentType.Cert));
-                            idp.AllowedRelyingParties.Add(new Uri("urn:tests"));
+                            idp.AllowedRelyingParties.Add("urn:tests");
                             idp.SecurityKey = new X509SecurityKey(publicCertificate);
                         }
                     })
