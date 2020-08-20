@@ -44,7 +44,6 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton<SecurityTokenHandlerProvider>();
             services.TryAddSingleton<UserNameSecurityTokenHandler>();
             services.TryAddSingleton<X509SecurityTokenHandler>();
-            services.TryAddSingleton<X509SecurityTokenHandler>();
 
             return services;
         }
