@@ -33,35 +33,35 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                     .AddPasswordValidator<TestPasswordValidator>()
                     .AddX509Validator<TestX509Validator>()
 
-                    //.AddSecurityTokenService<TestSecurityTokenService>()
-                    .AddSecurityTokenHandler(new SamlSecurityTokenHandler(), SamlConstants.Saml11Namespace)
-                    .AddSecurityTokenHandler(new Saml2SecurityTokenHandler(), Saml2Constants.Saml2TokenProfile11)
-                    .AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers())
-
-                    .AddSha1Support()
-                    .AddSha1WithRsaSupport()
-
-                    .AddIdentityProvider("urn:test:issuer", idp =>
-                    {
-                        using (var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.ClientCertificateBase64)))
-                        {
-                            var publicCertificate = new X509Certificate2(certificate.Export(X509ContentType.Cert));
-                            idp.AllowedRelyingParties.Add("urn:tests");
-                            idp.SecurityKey = new X509SecurityKey(publicCertificate);
-                        }
-                    })
-                    .AddRelyingParty("urn:tests", party =>
-                    {
-                        var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));
-                        party.Name = "My test relying party";
-                        party.SigningKey = new X509SecurityKey(certificate);
-                        party.SigningAlgorithm = SecurityAlgorithm.Asymmetric.RsaSha256;
-                        party.TokenType = Saml2Constants.Saml2TokenProfile11;
-                    })
-
                     .Configure(options =>
                     {
                         options.Issuer = "urn:Solid.Identity.Protocols.WsTrust.Tests.Host";
+
+                        options.AddSamlSecurityTokenHandler();
+                        options.AddSaml2SecurityTokenHandler();
+                        options.AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers());
+
+                        options.AddSha1Support();
+                        options.AddSha1WithRsaSupport();
+
+
+                        options.AddIdentityProvider("urn:test:issuer", idp =>
+                        {
+                            using (var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.ClientCertificateBase64)))
+                            {
+                                var publicCertificate = new X509Certificate2(certificate.Export(X509ContentType.Cert));
+                                idp.AllowedRelyingParties.Add("urn:tests");
+                                idp.SecurityKey = new X509SecurityKey(publicCertificate);
+                            }
+                        });
+                        options.AddRelyingParty("urn:tests", party =>
+                        {
+                            var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));
+                            party.Name = "My test relying party";
+                            party.SigningKey = new X509SecurityKey(certificate);
+                            party.SigningAlgorithm = SecurityAlgorithm.Asymmetric.RsaSha256;
+                            party.TokenType = Saml2Constants.Saml2TokenProfile11;
+                        });
                     })
                 ;
             });

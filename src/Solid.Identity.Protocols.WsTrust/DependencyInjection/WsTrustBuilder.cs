@@ -88,39 +88,6 @@ namespace Solid.Identity.DependencyInjection
             return this;
         }
 
-        public WsTrustBuilder AddSecurityTokenHandler(SecurityTokenHandler handler, params string[] requestedTokenTypes)
-            => AddSecurityTokenHandler(_ => handler, requestedTokenTypes);
-
-        public WsTrustBuilder AddSecurityTokenHandler(Func<IServiceProvider, SecurityTokenHandler> factory, params string[] requestedTokenTypes)
-        {
-            Configure(o => o.SecurityTokenHandlers.Add(new SecurityTokenHandlerDescriptor(requestedTokenTypes, factory)));
-            return this;
-        }
-
-        public WsTrustBuilder AddSha1Support()
-            => AddSupportedHashAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1", _ => SHA1.Create());
-
-        public WsTrustBuilder AddSha1WithRsaSupport()
-            => AddSupportedSignatureAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1", (services, key) =>
-            {
-                var logger = services.GetRequiredService<ILogger<RsaSha1SignatureProvider>>();
-                return new RsaSha1SignatureProvider(key, "http://www.w3.org/2000/09/xmldsig#rsa-sha1", logger);
-            });
-
-        public WsTrustBuilder AddSupportedHashAlgorithm(string algorithm, Func<IServiceProvider, HashAlgorithm> factory)
-        {
-            Services.TryAddSingleton<ICryptoProvider, CustomCryptoProvider>();
-            Configure(o => o.SupportedHashAlgorithms[algorithm] = new HashAlgorithmDescriptor(algorithm, (services, __) => factory(services)));
-            return this;
-        }
-
-        public WsTrustBuilder AddSupportedSignatureAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, SignatureProvider> factory)
-        {
-            Services.TryAddSingleton<ICryptoProvider, CustomCryptoProvider>();
-            Configure(o => o.SupportedSignatureAlgorithms[algorithm] = new SignatureProviderDescriptor(algorithm, (services, args) => factory(services, args.FirstOrDefault() as SecurityKey)));
-            return this;
-        }
-
         public WsTrustBuilder AddRelyingPartyStore<TRelyingPartyStore>(Func<IServiceProvider, TRelyingPartyStore> factory)
             where TRelyingPartyStore : class, IRelyingPartyStore
         {
@@ -146,29 +113,6 @@ namespace Solid.Identity.DependencyInjection
             where TIdentityProviderStore : class, IIdentityProviderStore
         {
             Services.TryAddSingleton<IIdentityProviderStore, TIdentityProviderStore>();
-            return this;
-        }
-
-        //public WsTrustBuilder AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
-        //{
-        //    if (!Uri.TryCreate(appliesTo, UriKind.RelativeOrAbsolute, out var uri))
-        //        throw new ArgumentException("AppliesTo must be a valid Uri.", nameof(appliesTo));
-        //    return AddRelyingParty(uri, configureRelyingParty);
-        //}
-
-        public WsTrustBuilder AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
-        {
-            var party = new RelyingParty { AppliesTo = appliesTo };
-            configureRelyingParty(party);
-            Configure(o => o.RelyingParties[appliesTo] = party);
-            return this;
-        }
-
-        public WsTrustBuilder AddIdentityProvider(string id, Action<IdentityProvider> configureIdentityProvider)
-        {
-            var idp = new IdentityProvider { Id = id };
-            configureIdentityProvider(idp);
-            Configure(o => o.IdentityProviders[id] = idp);
             return this;
         }
 

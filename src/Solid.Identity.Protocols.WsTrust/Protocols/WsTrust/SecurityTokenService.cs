@@ -24,7 +24,7 @@ namespace Solid.Identity.Protocols.WsTrust
     public class SecurityTokenService : ISecurityTokenService
     {
         protected WsTrustConstants Constants { get; private set; }
-        protected IRelyingPartyStore RelyingParties { get; }
+        protected RelyingPartyProvider RelyingParties { get; }
         protected IncomingClaimsMapper Mapper { get; }
         protected OutgoingSubjectFactory SubjectFactory { get; }
         protected SecurityTokenHandlerProvider SecurityTokenHandlerProvider { get; }
@@ -33,7 +33,7 @@ namespace Solid.Identity.Protocols.WsTrust
         protected ILogger Logger { get; }
 
         public SecurityTokenService(
-            IRelyingPartyStore relyingParties, 
+            RelyingPartyProvider relyingParties, 
             IncomingClaimsMapper mapper, 
             OutgoingSubjectFactory subjectFactory, 
             SecurityTokenHandlerProvider securityTokenHandlerProvider, 

@@ -20,13 +20,13 @@ namespace Solid.Identity.Protocols.WsTrust
     {
         private WsTrustOptions _options;
         private readonly IDisposable _optionsChangeToken;
-        private readonly IIdentityProviderStore _identityProviders;
-        private readonly IRelyingPartyStore _relyingParties;
+        private readonly IdentityProviderProvider _identityProviders;
+        private readonly RelyingPartyProvider _relyingParties;
         private readonly ILogger<WsTrustTokenValidationParametersFactory> _logger;
 
         public WsTrustTokenValidationParametersFactory(
-            IIdentityProviderStore identityProviders,
-            IRelyingPartyStore relyingParties,
+            IdentityProviderProvider identityProviders,
+            RelyingPartyProvider relyingParties,
             ILogger<WsTrustTokenValidationParametersFactory> logger,
             IOptionsMonitor<WsTrustOptions> monitor)
         {
