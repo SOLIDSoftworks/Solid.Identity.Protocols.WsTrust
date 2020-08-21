@@ -2,7 +2,9 @@
 using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Solid.Identity.Protocols.WsTrust.Abstractions
 {
@@ -21,5 +23,6 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         bool Enabled { get; }
         IEnumerable<string> RequiredClaims { get; }
         IEnumerable<string> OptionalClaims { get; }
+        ValueTask<bool> AuthorizeAsync(ClaimsPrincipal principal);
     }
 }

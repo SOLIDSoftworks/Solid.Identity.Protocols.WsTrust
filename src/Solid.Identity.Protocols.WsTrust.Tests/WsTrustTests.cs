@@ -27,6 +27,36 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             _fixture = fixture;
         }
 
+        [Fact]
+        public void ShouldValidateIsserAsAudience()
+        {
+            var request = new RequestSecurityToken
+            {
+                RequestType = RequestTypes.Issue,
+                KeyType = KeyTypes.Bearer,
+                AppliesTo = new EndpointReference("urn:tests")
+            };
+            var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", appliesTo: WsTrustTestsFixture.Issuer);
+            var token = client.Issue(request, out _);
+
+            Assert.NotNull(token);
+        }
+
+        [Fact]
+        public void ShouldValidateRequestUrlAsAudience()
+        {
+            var request = new RequestSecurityToken
+            {
+                RequestType = RequestTypes.Issue,
+                KeyType = KeyTypes.Bearer,
+                AppliesTo = new EndpointReference("urn:tests")
+            };
+            var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", appliesTo: $"{_fixture.TestingServer.BaseAddress}trust/13");
+            var token = client.Issue(request, out _);
+
+            Assert.NotNull(token);
+        }
+
         [Theory]
         [InlineData(WsTrustTestsFixture.SamlTokenType)]
         [InlineData(WsTrustTestsFixture.Saml2TokenType)]

@@ -35,8 +35,6 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
 
                     .Configure(options =>
                     {
-                        options.Issuer = "urn:Solid.Identity.Protocols.WsTrust.Tests.Host";
-
                         options.AddSamlSecurityTokenHandler();
                         options.AddSaml2SecurityTokenHandler();
                         options.AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers());
@@ -44,6 +42,16 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                         options.AddSha1Support();
                         options.AddSha1WithRsaSupport();
 
+                        options.AddIdentityProvider("urn:alpha:and:omega", idp =>
+                        {
+                            idp.Name = "God token";
+                            idp.AllowedRelyingParties.Add("urn:tests");
+                        });
+                        options.AddIdentityProvider("CN=test.valid", idp =>
+                        {
+                            idp.Name = "Certificate authentication";
+                            idp.AllowedRelyingParties.Add("urn:tests");
+                        });
 
                         options.AddIdentityProvider("urn:test:issuer", idp =>
                         {

@@ -36,7 +36,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
     {
         public const string SamlTokenType = "urn:oasis:names:tc:SAML:1.0:assertion";
         public const string Saml2TokenType = "urn:oasis:names:tc:SAML:2.0:assertion";
-
+        public const string Issuer = "urn:Solid.Identity.Protocols.WsTrust.Tests.Host";
 
         public X509Certificate2 Certificate { get; }
         public X509Certificate2 ClientCertificate { get; }
@@ -56,7 +56,11 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         protected override void ConfigureServices(IServiceCollection services)
         {
-            services.ConfigureWsTrust(options => options.DefaultSigningKey = new Microsoft.IdentityModel.Tokens.X509SecurityKey(Certificate));
+            services.ConfigureWsTrust(options =>
+            {
+                options.Issuer = Issuer;
+                options.DefaultSigningKey = new Microsoft.IdentityModel.Tokens.X509SecurityKey(Certificate);
+            });
         }
 
         protected override void ConfigureAppConfiguration(IInMemoryConfigurationBuilderRoot builder)

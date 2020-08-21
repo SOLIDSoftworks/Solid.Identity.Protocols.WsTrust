@@ -39,6 +39,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Abstractions
                 new Claim(ClaimTypes.NameIdentifier, subject),
                 new Claim(ClaimTypes.Name, certificate.Subject),
                 new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethod),
+                new Claim(ClaimTypes.X500DistinguishedName, certificate.Subject),
                 AuthenticationInstantClaim.Now
             };
 

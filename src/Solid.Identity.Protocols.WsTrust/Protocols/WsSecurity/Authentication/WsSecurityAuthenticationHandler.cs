@@ -89,8 +89,8 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                         }
                         else if (reader.IsStartElement())
                         {
-                            var result = await VerifyTokenAsync(reader, soap);
-                            results.Add(result);
+                            var verified = await VerifyTokenAsync(reader, soap);
+                            results.Add(verified);
                         }
                         else if (reader.IsWsSecurityEndElement()) break;
                         else if (reader.NodeType == XmlNodeType.EndElement) reader.Read();
@@ -111,18 +111,30 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                     }
                 }
 
+                var result = results.First();
                 var header = soap.Request.Headers[index];
                 soap.Request.Headers.UnderstoodHeaders.Add(header);
                 var properties = new AuthenticationProperties
                 {
                     IsPersistent = false
                 };
-                return AuthenticateResult.Success(new AuthenticationTicket(results.Select(t => t.User).First(), properties, Scheme.Name));
+                properties.Parameters.Add(nameof(SecurityToken), result.Token);
+
+                AddIssuerClaim(result.User, result.Token);
+
+                return AuthenticateResult.Success(new AuthenticationTicket(result.User, properties, Scheme.Name));
             }
             catch (Exception ex)
             {
                 return AuthenticateResult.Fail(ex);
             }
+        }
+
+        private void AddIssuerClaim(ClaimsPrincipal user, SecurityToken token)
+        {
+            if (token?.Issuer == null) return;
+            var identity = ClaimsPrincipal.PrimaryIdentitySelector(user.Identities);
+            identity.AddClaim(new Claim(WsSecurityClaimTypes.Issuer, token.Issuer));
         }
 
         private Signature ReadSignature(XmlReader reader, SoapContext soap)

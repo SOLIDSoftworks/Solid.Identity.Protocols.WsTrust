@@ -4,7 +4,9 @@ using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -23,5 +25,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public bool Enabled { get; set; } = true;
         public IEnumerable<string> RequiredClaims { get; set; } = Enumerable.Empty<string>();
         public IEnumerable<string> OptionalClaims { get; set; } = Enumerable.Empty<string>();
+
+        public virtual ValueTask<bool> AuthorizeAsync(ClaimsPrincipal principal) => new ValueTask<bool>(true);
     }
 }

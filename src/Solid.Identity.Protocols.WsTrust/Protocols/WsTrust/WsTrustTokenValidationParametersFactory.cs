@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.IdentityModel.Tokens.Saml;
@@ -22,16 +23,19 @@ namespace Solid.Identity.Protocols.WsTrust
         private readonly IDisposable _optionsChangeToken;
         private readonly IdentityProviderProvider _identityProviders;
         private readonly RelyingPartyProvider _relyingParties;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<WsTrustTokenValidationParametersFactory> _logger;
 
         public WsTrustTokenValidationParametersFactory(
             IdentityProviderProvider identityProviders,
             RelyingPartyProvider relyingParties,
+            IHttpContextAccessor httpContextAccessor,
             ILogger<WsTrustTokenValidationParametersFactory> logger,
             IOptionsMonitor<WsTrustOptions> monitor)
         {
             _identityProviders = identityProviders;
             _relyingParties = relyingParties;
+            _httpContextAccessor = httpContextAccessor;
             _logger = logger;
             _options = monitor.CurrentValue;
             _optionsChangeToken = monitor.OnChange((options, _) => _options = options);
@@ -98,6 +102,11 @@ namespace Solid.Identity.Protocols.WsTrust
         protected virtual bool ValidateAudiences(IEnumerable<string> audiences, SecurityToken token, TokenValidationParameters parameters)
         {
             if (!parameters.ValidateAudience) return true;
+
+            if (audiences.Contains(_options.Issuer)) return true;
+            var request = _httpContextAccessor.HttpContext.Request;
+            var url = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}{request.QueryString}";
+            if (audiences.Contains(url)) return true;
 
             var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
             if (!properties.TryGetValue("idps", out var obj)) return false;

@@ -18,6 +18,8 @@ using System.Threading.Tasks;
 using System.Xml;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Microsoft.Extensions.Logging;
+using Solid.Identity.Protocols.WsSecurity;
+using System.Security;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -31,18 +33,21 @@ namespace Solid.Identity.Protocols.WsTrust
         protected WsTrustOptions Options { get; }
         protected ISystemClock SystemClock { get; }
         protected ILogger Logger { get; }
+        protected IdentityProviderProvider IdentityProviders { get; }
 
         public SecurityTokenService(
+            IdentityProviderProvider identityProviders,
             RelyingPartyProvider relyingParties, 
             IncomingClaimsMapper mapper, 
             OutgoingSubjectFactory subjectFactory, 
-            SecurityTokenHandlerProvider securityTokenHandlerProvider, 
+            SecurityTokenHandlerProvider securityTokenHandlerProvider,
             ILoggerFactory loggerFactory,
             IOptions<WsTrustOptions> options, 
             ISystemClock systemClock)
         {
             Logger = loggerFactory.CreateLogger(GetType().FullName);
 
+            IdentityProviders = identityProviders;
             RelyingParties = relyingParties;
             Mapper = mapper;
             SubjectFactory = subjectFactory;
@@ -53,10 +58,22 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public virtual async ValueTask<WsTrustResponse> IssueAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
         {
+            // currently we only support RST/RSTR pattern
+            if (request == null)
+                throw new InvalidRequestException("ID2051");
+
+            if (request.AppliesTo == null && Options.DefaultAppliesTo != null)                    
+                    request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));            
+
             await ValidateRequestAsync(request, cancellationToken);
+            await ValidatePartnerAsync(principal, request, cancellationToken);
+
             var scope = await GetScopeAsync(principal, request, cancellationToken);
             if (scope == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2013"));
+
+            if (!await scope.RelyingParty.AuthorizeAsync(principal))
+                throw new SecurityException($"User is not authorized to be issued a token for {scope.RelyingParty.AppliesTo}");
 
             var descriptor = await CreateSecurityTokenDescriptorAsync(request, scope);
             if (descriptor == null)
@@ -180,11 +197,30 @@ namespace Solid.Identity.Protocols.WsTrust
             return new EncryptingCredentials(key, algorithm.Algorithm, algorithm.Digest);
         }
 
+        protected virtual async ValueTask ValidatePartnerAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        {
+            var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
+            if (issuer != null)
+            {
+                var idp = await IdentityProviders.GetIdentityProviderAsync(issuer);
+                if (idp == null)
+                    throw new SecurityException($"Unknown token issuer for incoming token: {issuer}");
+                if (!idp.RestrictRelyingParties) return;
+
+                var appliesTo = request.AppliesTo.EndpointReference.Uri;
+                if (!idp.AllowedRelyingParties.Contains(appliesTo))
+                    throw new SecurityException($"Identity provider ({issuer}) attempting to request token for: {appliesTo}");
+            }
+        }
+
         protected virtual ValueTask ValidateRequestAsync(WsTrustRequest request, CancellationToken cancellationToken)
         {
             // currently we only support RST/RSTR pattern
             if (request == null)
                 throw new InvalidRequestException("ID2051");
+
+            if(request.AppliesTo == null)
+                throw new InvalidRequestException("AppliesTo not specified");
 
             //// STS only support Issue for now
             //if (request.RequestType != null && request.RequestType != RequestTypes.Issue)
@@ -230,12 +266,6 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
         {
-            if (request.AppliesTo == null)
-            {
-                if (Options.DefaultAppliesTo == null)
-                    throw new InvalidRequestException("AppliesTo not specified");
-                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
-            }
             var appliesTo = request.AppliesTo.EndpointReference.Uri;
             var party = await RelyingParties.GetRelyingPartyAsync(appliesTo);
             var identity = ClaimsPrincipal.PrimaryIdentitySelector(principal.Identities);
