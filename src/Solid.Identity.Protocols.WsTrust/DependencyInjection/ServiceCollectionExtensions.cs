@@ -34,6 +34,15 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.AddSecurityTokenService<SecurityTokenService>();
             builder.AddTokenValidationParametersFactory<WsTrustTokenValidationParametersFactory>();
 
+            services.PostConfigure<WsTrustOptions>(options =>
+            {
+                options.AddIdentityProvider(options.Issuer, idp =>
+                {
+                    idp.RestrictRelyingParties = false;
+                    idp.Name = "Local authority";
+                });
+            });
+
             services.TryAddSingleton<ICryptoProvider, CustomCryptoProvider>();
             services.TryAddTransient<IncomingClaimsMapper>();
             services.TryAddTransient<OutgoingSubjectFactory>();
