@@ -30,6 +30,7 @@ namespace Solid.Identity.Protocols.WsTrust
         protected IncomingClaimsMapper Mapper { get; }
         protected OutgoingSubjectFactory SubjectFactory { get; }
         protected SecurityTokenHandlerProvider SecurityTokenHandlerProvider { get; }
+        protected IServiceProvider Services { get; }
         protected WsTrustOptions Options { get; }
         protected ISystemClock SystemClock { get; }
         protected ILogger Logger { get; }
@@ -41,6 +42,7 @@ namespace Solid.Identity.Protocols.WsTrust
             IncomingClaimsMapper mapper, 
             OutgoingSubjectFactory subjectFactory, 
             SecurityTokenHandlerProvider securityTokenHandlerProvider,
+            IServiceProvider services, 
             ILoggerFactory loggerFactory,
             IOptions<WsTrustOptions> options, 
             ISystemClock systemClock)
@@ -52,6 +54,7 @@ namespace Solid.Identity.Protocols.WsTrust
             Mapper = mapper;
             SubjectFactory = subjectFactory;
             SecurityTokenHandlerProvider = securityTokenHandlerProvider;
+            Services = services;
             Options = options.Value;
             SystemClock = systemClock;
         }
@@ -72,7 +75,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (scope == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2013"));
 
-            if (!await scope.RelyingParty.AuthorizeAsync(principal))
+            if (!await scope.RelyingParty.AuthorizeAsync(Services, principal))
                 throw new SecurityException($"User is not authorized to be issued a token for {scope.RelyingParty.AppliesTo}");
 
             var descriptor = await CreateSecurityTokenDescriptorAsync(request, scope);

@@ -25,7 +25,6 @@ namespace Solid.Identity.Protocols.WsTrust
         public bool Enabled { get; set; } = true;
         public IEnumerable<string> RequiredClaims { get; set; } = Enumerable.Empty<string>();
         public IEnumerable<string> OptionalClaims { get; set; } = Enumerable.Empty<string>();
-
-        public virtual ValueTask<bool> AuthorizeAsync(ClaimsPrincipal principal) => new ValueTask<bool>(true);
+        public Func<IServiceProvider, ClaimsPrincipal, ValueTask<bool>> AuthorizeAsync { get; set; } = (_, __) => new ValueTask<bool>(true);
     }
 }

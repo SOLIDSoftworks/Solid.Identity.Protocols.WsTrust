@@ -23,6 +23,6 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         bool Enabled { get; }
         IEnumerable<string> RequiredClaims { get; }
         IEnumerable<string> OptionalClaims { get; }
-        ValueTask<bool> AuthorizeAsync(ClaimsPrincipal principal);
+        Func<IServiceProvider, ClaimsPrincipal, ValueTask<bool>> AuthorizeAsync { get; }
     }
 }
