@@ -1,4 +1,5 @@
-﻿using Solid.Identity.Protocols.WsTrust.Abstractions;
+﻿using Microsoft.Extensions.Options;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
@@ -54,15 +55,15 @@ namespace Solid.Identity.Protocols.WsTrust
             if (!claims.Any())
                 // TODO: Should we add this claim when the claim collection is empty?
                 // Right now, this is done so the SAML2 attribute statement won't be empty.
-                claims.Add(new Claim("http://solid.schemas/claims/null", bool.TrueString));
+                claims.Add(new Claim("http://schemas.solidsoft.works/ws/2020/08/identity/claims/null", bool.TrueString, ClaimValueTypes.Boolean));
 
             var name = claims.FirstOrDefault(c => c.Type == nameClaimType)?.Value;
             if (name != null && !claims.Any(c => c.Type == ClaimTypes.NameIdentifier))
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, name));
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, name, ClaimValueTypes.String));
             if (!claims.Any(c => c.Type == ClaimTypes.AuthenticationInstant))
                 claims.Add(AuthenticationInstantClaim.Now);
             if (!claims.Any(c => c.Type == ClaimTypes.AuthenticationMethod))
-                claims.Add(new Claim(ClaimTypes.AuthenticationMethod, "http://schemas.microsoft.com/ws/2008/06/identity/authenticationmethod/unspecified"));
+                claims.Add(new Claim(ClaimTypes.AuthenticationMethod, "http://schemas.microsoft.com/ws/2008/06/identity/authenticationmethod/unspecified", ClaimValueTypes.String));
         }
     }
 }
