@@ -42,10 +42,10 @@ namespace Solid.Identity.Protocols.WsSecurity.Abstractions
         {
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, certificate.Thumbprint),
-                new Claim(ClaimTypes.Name, name),
-                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethod),
-                new Claim(ClaimTypes.X500DistinguishedName, certificate.Subject),
+                new Claim(ClaimTypes.NameIdentifier, certificate.Thumbprint, ClaimValueTypes.String),
+                new Claim(ClaimTypes.Name, name, ClaimValueTypes.String),
+                new Claim(ClaimTypes.AuthenticationMethod, AuthenticationMethod, ClaimValueTypes.String),
+                new Claim(ClaimTypes.X500DistinguishedName, certificate.Subject, ClaimValueTypes.X500Name),
                 AuthenticationInstantClaim.Now
             };
 
