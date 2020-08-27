@@ -20,6 +20,7 @@ using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Microsoft.Extensions.Logging;
 using Solid.Identity.Protocols.WsSecurity;
 using System.Security;
+using System.Linq;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -280,7 +281,9 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<IEnumerable<Claim>> MapIncomingClaimsAsync(IEnumerable<Claim> claims)
         {
-            return claims;
+            var list = claims.ToList();
+            var mapped = await Mapper.MapIncomingClaimsAsync(list);
+            return mapped;
         }
 
         /// <summary>
@@ -301,11 +304,12 @@ namespace Solid.Identity.Protocols.WsTrust
             DateTime expires;
 
             var now = SystemClock.UtcNow.UtcDateTime;
+            var lifetime = scope.RelyingParty.TokenLifeTime == TimeSpan.Zero ? Options.DefaultTokenLifetime : scope.RelyingParty.TokenLifeTime; 
 
             if (requestLifetime == null)
             {
                 created = now;
-                expires = now.Add(Options.DefaultTokenLifetime);
+                expires = now.Add(lifetime);
             }
             else
             {
@@ -317,7 +321,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 if (requestLifetime.Expires.HasValue)
                     expires = requestLifetime.Expires.Value;
                 else
-                    expires = now.Add(Options.DefaultTokenLifetime);
+                    expires = now.Add(lifetime);
             }
 
             VerifyComputedLifetime(created, expires);

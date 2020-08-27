@@ -1,4 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Saml2;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Solid.Identity.Tokens;
 using System;
@@ -12,6 +13,8 @@ namespace Solid.Identity.Protocols.WsTrust
 {
     public class RelyingParty : IRelyingParty
     {
+        internal RelyingParty() { }
+        public RelyingParty(string appliesTo) => AppliesTo = appliesTo;
         public string Id => AppliesTo ?? throw new ArgumentNullException(nameof(AppliesTo));
         public string AppliesTo { get; internal set; }
         public string ReplyTo { get; set; }
@@ -20,7 +23,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public SecurityKey EncryptingKey { get; set; }
         public SecurityAlgorithm EncryptingAlgorithm { get; set; }
         public string Name { get; set; }
-        public int TokenLifeTime { get; set; }
+        public TimeSpan TokenLifeTime { get; set; } = TimeSpan.Zero;
         public string TokenType { get; set; }
         public bool Enabled { get; set; } = true;
         public IEnumerable<string> RequiredClaims { get; set; } = Enumerable.Empty<string>();

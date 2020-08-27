@@ -8,7 +8,9 @@ namespace Solid.Identity.Protocols.WsTrust
 {
     public class IdentityProvider : IIdentityProvider
     {
-        public string Id { get; set; }
+        internal IdentityProvider() { }
+        public IdentityProvider(string id) => Id = id;
+        public string Id { get; internal set; }
 
         public string Name { get; set; }
 
