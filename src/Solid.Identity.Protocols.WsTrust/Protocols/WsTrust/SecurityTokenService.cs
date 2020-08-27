@@ -94,16 +94,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
             descriptor.Subject = await CreateOutgoingSubjectAsync(request, scope, cancellationToken);
 
-            var token = handler.CreateToken(descriptor);
+            var token = await CreateSecurityTokenAsync(scope, request, descriptor, handler, cancellationToken);
             descriptor.Token = token;
-            //descriptor.TokenElement = GetTokenElement(token, handler);
-            //descriptor.AttachedReference = new SecurityTokenReference
-            //{
-            //    Id = token.Id,
-            //    TokenType = descriptor.TokenType,
-            //    KeyIdentifier = 
-            //};
-            //descriptor.UnattachedReference = handler.CreateSecurityTokenReference(descriptor.Token, false);
 
             return await CreateResponseAsync(request, descriptor, cancellationToken);
         }
@@ -116,6 +108,9 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public virtual ValueTask<WsTrustResponse> ValidateAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
             => throw new InvalidRequestException(ErrorMessages.ID3141, (request != null && request.RequestType != null ? request.RequestType : "Validate"));
+        
+        protected virtual ValueTask<SecurityToken> CreateSecurityTokenAsync(Scope scope, WsTrustRequest request, RequestedSecurityTokenDescriptor descriptor, SecurityTokenHandler handler, CancellationToken cancellationToken)
+            => new ValueTask<SecurityToken>(handler.CreateToken(descriptor));
 
         protected virtual ValueTask<WsTrustResponse> CreateResponseAsync(WsTrustRequest request, RequestedSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
         {
