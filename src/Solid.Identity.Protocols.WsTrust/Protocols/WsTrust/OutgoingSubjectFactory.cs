@@ -14,62 +14,102 @@ namespace Solid.Identity.Protocols.WsTrust
 {
     public class OutgoingSubjectFactory
     {
-        private IDictionary<string, IEnumerable<IClaimStore>> _stores;
+        private IDictionary<string, IEnumerable<IRelyingPartyClaimStore>> _relyingPartyClaimStores;
+        private IEnumerable<ITokenTypeClaimStore> _tokenTypeClaimStores;
         private ILogger<OutgoingSubjectFactory> _logger;
 
-        public OutgoingSubjectFactory(IEnumerable<IClaimStore> stores, ILogger<OutgoingSubjectFactory> logger)
+        public OutgoingSubjectFactory(IEnumerable<IRelyingPartyClaimStore> relyingPartyClaimStores, IEnumerable<ITokenTypeClaimStore> tokenTypeClaimStores, ILogger<OutgoingSubjectFactory> logger)
         {
-            _stores = stores
-                .SelectMany(s => s.ClaimTypesOffered.Select(t => new KeyValuePair<string, IClaimStore>(t.Type, s)))
+            _relyingPartyClaimStores = relyingPartyClaimStores
+                .SelectMany(s => s.ClaimTypesOffered.Select(t => new KeyValuePair<string, IRelyingPartyClaimStore>(t.Type, s)))
                 .GroupBy(p => p.Key, p => p.Value)
                 .ToDictionary(g => g.Key, g => g.AsEnumerable())
             ;
 
+            _tokenTypeClaimStores = tokenTypeClaimStores;
+
             _logger = logger;
         }
 
-        public async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsIdentity identity, IRelyingParty relyingParty)
+        public async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsIdentity identity, IRelyingParty relyingParty, string tokenType)
         {
             var claims = new List<Claim>();
+
             foreach (var required in relyingParty.RequiredClaims ?? Enumerable.Empty<string>())
             {
-                _logger.LogDebug($"Getting required claim: {required}");
-
-                var claim = identity.FindFirst(required);
-                if(claim != null)
+                var c = identity.FindFirst(required);
+                if(c != null)
                 {
-                    claims.Add(claim);
+                    claims.Add(c);
                     continue;
                 }
 
-                if (!_stores.TryGetValue(required, out var stores))
+                _logger.LogDebug($"Getting required claim: {required}");
+
+                if (!_relyingPartyClaimStores.TryGetValue(required, out var relyingPartyClaimStores))
                     throw new SecurityException($"Unable to create claim value for required claim: {required}");
-                foreach (var store in stores)
+                foreach (var store in relyingPartyClaimStores)
+                {
+                    if (!store.CanGenerateClaims(relyingParty.AppliesTo)) continue;
+
+                    var requiredClaims = await store.GetClaimsAsync(identity, relyingParty);
+                    foreach (var claim in requiredClaims)
+                    {
+                        _logger.LogTrace($"Adding {claim.Type} from {store.GetType().Name}");
+                        claims.Add(claim);
+                    }
+
                     claims.AddRange(await store.GetClaimsAsync(identity, relyingParty));
+                }
             }
 
             foreach (var optional in relyingParty.OptionalClaims ?? Enumerable.Empty<string>())
             {
+
+                var c = identity.FindFirst(optional);
+                if (c != null)
+                {
+                    claims.Add(c);
+                    continue;
+                }
+
                 _logger.LogDebug($"Attempting to get optional claim: {optional}");
 
-                var claim = identity.FindFirst(optional);
-                if (claim != null)
+                if (!_relyingPartyClaimStores.TryGetValue(optional, out var relyingPartyClaimStores))
                 {
-                    claims.Add(claim);
+                    _logger.LogDebug($"Unable to get claim value for optional claim: {optional} - Skipping...");
                     continue;
                 }
 
-                if (!_stores.TryGetValue(optional, out var stores))
+                foreach (var store in relyingPartyClaimStores)
                 {
-                    _logger.LogDebug($"Unable to create claim value for optional claim: {optional} - Skipping...");
-                    continue;
-                }
+                    if (!store.CanGenerateClaims(relyingParty.AppliesTo)) continue;
 
-                foreach (var store in stores)
-                    claims.AddRange(await store.GetClaimsAsync(identity, relyingParty));
+                    var requiredClaims = await store.GetClaimsAsync(identity, relyingParty);
+                    foreach (var claim in requiredClaims)
+                    {
+                        _logger.LogTrace($"Adding {claim.Type} from {store.GetType().Name}");
+                        claims.Add(claim);
+                    }
+                }
             }
 
-            AddRequiredClaims(claims, identity.NameClaimType, identity.RoleClaimType);
+            var tokenTypeClaimStores = _tokenTypeClaimStores.Where(s => s.CanGenerateClaims(tokenType));
+            if (tokenTypeClaimStores.Any())
+            {
+                _logger.LogDebug($"Getting claims for token type: {tokenType}");
+                foreach (var store in tokenTypeClaimStores)
+                {
+                    var tokenTypeClaims = await store.GetClaimsAsync(identity, relyingParty, claims);
+                    foreach (var claim in tokenTypeClaims)
+                    {
+                        _logger.LogTrace($"Adding {claim.Type} from {store.GetType().Name}");
+                        claims.Add(claim);
+                    }
+                }
+            }
+
+            //AddRequiredClaims(claims, identity.NameClaimType, identity.RoleClaimType);
 
             var outgoing = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);
             return outgoing;

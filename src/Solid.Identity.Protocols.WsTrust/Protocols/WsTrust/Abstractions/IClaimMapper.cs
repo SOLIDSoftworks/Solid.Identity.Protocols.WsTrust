@@ -9,6 +9,6 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
     public interface IClaimMapper
     {
         string IncomingClaimIssuer { get; }
-        ValueTask<IEnumerable<Claim>> MapClaimsAsync(IEnumerable<Claim> claim);
+        ValueTask<IEnumerable<Claim>> MapClaimsAsync(IEnumerable<Claim> claims);
     }
 }

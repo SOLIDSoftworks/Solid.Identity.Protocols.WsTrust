@@ -130,17 +130,31 @@ namespace Solid.Identity.DependencyInjection
             return this;
         }
 
-        public WsTrustBuilder AddClaimStore<TStore>()
-            where TStore : class, IClaimStore
+        public WsTrustBuilder AddRelyingPartyClaimStore<TStore>()
+            where TStore : class, IRelyingPartyClaimStore
         {
-            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimStore, TStore>());
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IRelyingPartyClaimStore, TStore>());
             return this;
         }
 
-        public WsTrustBuilder AddClaimStore<TStore>(Func<IServiceProvider, TStore> factory)
-            where TStore : class, IClaimStore
+        public WsTrustBuilder AddRelyingPartyClaimStore<TStore>(Func<IServiceProvider, TStore> factory)
+            where TStore : class, IRelyingPartyClaimStore
         {
-            Services.TryAddEnumerable(ServiceDescriptor.Transient<IClaimStore, TStore>(factory));
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<IRelyingPartyClaimStore, TStore>(factory));
+            return this;
+        }
+
+        public WsTrustBuilder AddTokenTypeClaimStore<TStore>()
+            where TStore : class, ITokenTypeClaimStore
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<ITokenTypeClaimStore, TStore>());
+            return this;
+        }
+
+        public WsTrustBuilder AddTokenTypeClaimStore<TStore>(Func<IServiceProvider, TStore> factory)
+            where TStore : class, ITokenTypeClaimStore
+        {
+            Services.TryAddEnumerable(ServiceDescriptor.Transient<ITokenTypeClaimStore, TStore>(factory));
             return this;
         }
     }

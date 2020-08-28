@@ -76,25 +76,27 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual IEnumerable<SecurityKey> ResolveIssuerSigningKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)
         {
-            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
-            if (!properties.TryGetValue("idps", out var obj)) return Enumerable.Empty<SecurityKey>();
-            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return Enumerable.Empty<SecurityKey>();
-
             _logger.LogDebug($"Finding issuer signing key for '{securityToken?.Issuer}'.");
-            if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return null;
-            return new[] { idp.SecurityKey };
+
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            var defaults = new[] { _options.DefaultSigningKey };
+            if (!properties.TryGetValue("idps", out var obj)) return defaults;
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return defaults;
+
+            if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return defaults;
+            return new[] { idp.SecurityKey }.Concat(defaults);
         }
 
         protected virtual string ValidateIssuer(string issuer, SecurityToken token, TokenValidationParameters parameters)
         {
             if (!parameters.ValidateIssuer) return issuer;
 
+            _logger.LogDebug($"Validating issuer '{issuer}'.");
             var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
             if (!properties.TryGetValue("idps", out var obj)) throw new SecurityException($"Unable to validate issuer '{issuer}'");
 
             if (!(obj is IDictionary<string, IIdentityProvider> idps)) throw new SecurityException($"Unable to validate issuer '{issuer}'");
 
-            _logger.LogDebug($"Validating issuer '{issuer}'.");
             if (idps.ContainsKey(issuer)) return issuer;
             throw new SecurityException($"Unable to validate issuer '{issuer}'");
         }
@@ -103,6 +105,7 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             if (!parameters.ValidateAudience) return true;
 
+            _logger.LogDebug($"Validating audience for issuer '{token?.Issuer}'.");
             if (audiences.Contains(_options.Issuer)) return true;
             var request = _httpContextAccessor.HttpContext.Request;
             var url = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}{request.QueryString}";
@@ -117,7 +120,6 @@ namespace Solid.Identity.Protocols.WsTrust
 
             if (!idp.RestrictRelyingParties) return true;
 
-            _logger.LogDebug($"Validating audience for issuer '{token?.Issuer}'.");
             var intersect = idp.AllowedRelyingParties.Intersect(audiences);
             return intersect.Any();
         }

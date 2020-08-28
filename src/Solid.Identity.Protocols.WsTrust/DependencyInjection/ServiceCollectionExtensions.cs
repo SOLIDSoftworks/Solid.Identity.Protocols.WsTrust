@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
             configure(builder);
             builder.AddSecurityTokenService<SecurityTokenService>();
             builder.AddTokenValidationParametersFactory<WsTrustTokenValidationParametersFactory>();
+            builder.AddTokenTypeClaimStore<SamlClaimStore>();
 
             services.PostConfigure<WsTrustOptions>(options =>
             {

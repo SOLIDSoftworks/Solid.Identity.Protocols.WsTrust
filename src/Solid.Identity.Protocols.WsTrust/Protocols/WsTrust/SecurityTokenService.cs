@@ -66,13 +66,20 @@ namespace Solid.Identity.Protocols.WsTrust
             if (request == null)
                 throw new InvalidRequestException("ID2051");
 
-            if (request.AppliesTo == null && Options.DefaultAppliesTo != null)                    
-                    request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));            
+            if (request.AppliesTo == null && Options.DefaultAppliesTo != null)
+                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
+
+            var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
+            if (request.TokenType == null)
+                request.TokenType = party?.TokenType ?? Options.DefaultTokenType;
 
             await ValidateRequestAsync(request, cancellationToken);
             await ValidatePartnerAsync(principal, request, cancellationToken);
 
-            var scope = await GetScopeAsync(principal, request, cancellationToken);
+            if (party == null)
+                throw new InvalidOperationException($"Relying party not found: {request.AppliesTo.EndpointReference.Uri}");
+
+            var scope = await GetScopeAsync(principal, request, party, cancellationToken);
             if (scope == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2013"));
 
@@ -139,6 +146,12 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<WsTrustResponse>(new WsTrustResponse(response));
         }
 
+        protected virtual async ValueTask<IRelyingParty> GetRelyingPartyAsync(AppliesTo appliesTo, CancellationToken cancellationToken)
+        {
+            if (appliesTo == null) return null;
+            return await RelyingParties.GetRelyingPartyAsync(appliesTo.EndpointReference.Uri);
+        }
+
         protected virtual ValueTask<SecurityTokenHandler> GetSecurityTokenHandlerAsync(string tokenType, CancellationToken cancellationToken)
         {
             var handler = SecurityTokenHandlerProvider.GetSecurityTokenHandler(tokenType);
@@ -156,7 +169,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 Issuer = Options.Issuer,
                 SigningCredentials = CreateSigningCredentials(scope),
                 EncryptingCredentials = CreateEncryptingCredentials(scope),
-                TokenType = request?.TokenType ?? scope.RelyingParty.TokenType ?? Options.DefaultTokenType
+                TokenType = request.TokenType
             };
 
             return new ValueTask<RequestedSecurityTokenDescriptor>(descriptor);
@@ -212,14 +225,14 @@ namespace Solid.Identity.Protocols.WsTrust
             }
         }
 
-        protected virtual ValueTask ValidateRequestAsync(WsTrustRequest request, CancellationToken cancellationToken)
+        protected virtual async ValueTask ValidateRequestAsync(WsTrustRequest request, CancellationToken cancellationToken)
         {
             // currently we only support RST/RSTR pattern
             if (request == null)
                 throw new InvalidRequestException("ID2051");
 
             if(request.AppliesTo == null)
-                throw new InvalidRequestException("AppliesTo not specified");
+                throw new InvalidRequestException("AppliesTo not specified.");
 
             //// STS only support Issue for now
             //if (request.RequestType != null && request.RequestType != RequestTypes.Issue)
@@ -235,11 +248,12 @@ namespace Solid.Identity.Protocols.WsTrust
             if (StringComparer.Ordinal.Equals(request.KeyType, Constants.WsTrustKeyTypes.Bearer) && request.KeySizeInBits.HasValue && (request.KeySizeInBits.Value != 0))
                 throw new InvalidRequestException("ID2050");
 
-            //// token type must be supported for this STS
-            //if (GetSecurityTokenHandler(request.TokenType) == null)
-            //{
-            //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new UnsupportedTokenTypeBadRequestException(request.TokenType));
-            //}
+            if (request.TokenType == null)
+                throw new InvalidRequestException("No token type requested.");
+
+            // token type must be supported for this STS
+            if (GetSecurityTokenHandlerAsync(request.TokenType, cancellationToken) == null)
+                throw new UnsupportedTokenTypeBadRequestException(request.TokenType);
 
             request.KeyType = (string.IsNullOrEmpty(request.KeyType)) ? Constants.WsTrustKeyTypes.Symmetric : request.KeyType;
 
@@ -254,19 +268,16 @@ namespace Solid.Identity.Protocols.WsTrust
                 if (request.KeySizeInBits > Options.DefaultMaxSymmetricKeySizeInBits)
                     throw new InvalidRequestException("ID2056", request.KeySizeInBits.Value, Options.DefaultMaxSymmetricKeySizeInBits);
             }
-            return new ValueTask();
         }
 
         protected virtual async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
         {
-            var subject = await SubjectFactory.CreateOutgoingSubjectAsync(scope.Subject, scope.RelyingParty);
+            var subject = await SubjectFactory.CreateOutgoingSubjectAsync(scope.Subject, scope.RelyingParty, request.TokenType);
             return subject;
         }
 
-        protected virtual async ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        protected virtual async ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
         {
-            var appliesTo = request.AppliesTo.EndpointReference.Uri;
-            var party = await RelyingParties.GetRelyingPartyAsync(appliesTo);
             var identity = ClaimsPrincipal.PrimaryIdentitySelector(principal.Identities);
             var claims = await MapIncomingClaimsAsync(principal.Claims);
             var user = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);
