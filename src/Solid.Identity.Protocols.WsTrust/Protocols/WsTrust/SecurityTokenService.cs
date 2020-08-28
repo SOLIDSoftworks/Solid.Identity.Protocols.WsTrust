@@ -156,7 +156,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 Issuer = Options.Issuer,
                 SigningCredentials = CreateSigningCredentials(scope),
                 EncryptingCredentials = CreateEncryptingCredentials(scope),
-                TokenType = request?.TokenType ?? Options.DefaultTokenType
+                TokenType = request?.TokenType ?? scope.RelyingParty.TokenType ?? Options.DefaultTokenType
             };
 
             return new ValueTask<RequestedSecurityTokenDescriptor>(descriptor);
