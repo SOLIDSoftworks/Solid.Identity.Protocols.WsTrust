@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
+using Solid.Identity.Protocols.WsTrust.Logging;
 using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
@@ -35,64 +36,26 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             var claims = new List<Claim>();
 
-            foreach (var required in relyingParty.RequiredClaims ?? Enumerable.Empty<string>())
+            var required = relyingParty.RequiredClaims ?? Enumerable.Empty<string>();
+            var optional = relyingParty.OptionalClaims ?? Enumerable.Empty<string>();
+
+            _logger.LogInformation($"Getting required claims for party: {relyingParty.AppliesTo}");
+            if (required.Any())
             {
-                var c = identity.FindFirst(required);
-                if(c != null)
-                {
-                    claims.Add(c);
-                    continue;
-                }
-
-                _logger.LogDebug($"Getting required claim: {required}");
-
-                if (!_relyingPartyClaimStores.TryGetValue(required, out var relyingPartyClaimStores))
-                    throw new SecurityException($"Unable to create claim value for required claim: {required}");
-                foreach (var store in relyingPartyClaimStores)
-                {
-                    if (!store.CanGenerateClaims(relyingParty.AppliesTo)) continue;
-
-                    var requiredClaims = await store.GetClaimsAsync(identity, relyingParty);
-                    foreach (var claim in requiredClaims)
-                    {
-                        _logger.LogTrace($"Adding {claim.Type} from {store.GetType().Name}");
-                        claims.Add(claim);
-                    }
-
-                    claims.AddRange(await store.GetClaimsAsync(identity, relyingParty));
-                }
+                if (!await TryGetClaimsAsync(relyingParty.RequiredClaims ?? Enumerable.Empty<string>(), "required", identity, relyingParty, claims))
+                    throw new SecurityException($"Unable to get all required claim values for party: {relyingParty.AppliesTo}");
+            }
+            else
+            {
+                _logger.LogInformation($"No required claims for party: {relyingParty.AppliesTo}");
             }
 
-            foreach (var optional in relyingParty.OptionalClaims ?? Enumerable.Empty<string>())
-            {
+            _logger.LogInformation($"Getting optional claims for party: {relyingParty.AppliesTo}");
+            if(optional.Any())
+                _ = await TryGetClaimsAsync(relyingParty.OptionalClaims ?? Enumerable.Empty<string>(), "optional", identity, relyingParty, claims);
+            else
+                _logger.LogInformation($"No optional claims for party: {relyingParty.AppliesTo}");
 
-                var c = identity.FindFirst(optional);
-                if (c != null)
-                {
-                    claims.Add(c);
-                    continue;
-                }
-
-                _logger.LogDebug($"Attempting to get optional claim: {optional}");
-
-                if (!_relyingPartyClaimStores.TryGetValue(optional, out var relyingPartyClaimStores))
-                {
-                    _logger.LogDebug($"Unable to get claim value for optional claim: {optional} - Skipping...");
-                    continue;
-                }
-
-                foreach (var store in relyingPartyClaimStores)
-                {
-                    if (!store.CanGenerateClaims(relyingParty.AppliesTo)) continue;
-
-                    var requiredClaims = await store.GetClaimsAsync(identity, relyingParty);
-                    foreach (var claim in requiredClaims)
-                    {
-                        _logger.LogTrace($"Adding {claim.Type} from {store.GetType().Name}");
-                        claims.Add(claim);
-                    }
-                }
-            }
 
             var tokenTypeClaimStores = _tokenTypeClaimStores.Where(s => s.CanGenerateClaims(tokenType));
             if (tokenTypeClaimStores.Any())
@@ -109,39 +72,53 @@ namespace Solid.Identity.Protocols.WsTrust
                 }
             }
 
-            //AddRequiredClaims(claims, identity.NameClaimType, identity.RoleClaimType);
-
             var outgoing = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);
             return outgoing;
         }
 
-        private void AddRequiredClaims(List<Claim> claims, string nameClaimType, string roleClaimType)
+        private async Task<bool> TryGetClaimsAsync(IEnumerable<string> requestedClaimTypes, string requirement, ClaimsIdentity source, IRelyingParty party, ICollection<Claim> claims)
         {
-            if (!claims.Any())
+            var list = requestedClaimTypes.ToList();
+            var stores = new List<IRelyingPartyClaimStore>();
+
+            foreach(var type in requestedClaimTypes)
             {
-                _logger.LogDebug("No user claims created. Adding null claim for SAML attribute statements.");
-                // TODO: Should we add this claim when the claim collection is empty?
-                // Right now, this is done so the SAML2 attribute statement won't be empty.
-                claims.Add(new Claim("http://schemas.solidsoft.works/ws/2020/08/identity/claims/null", bool.TrueString, ClaimValueTypes.Boolean));
+                if (!_relyingPartyClaimStores.TryGetValue(type, out var relyingPartyClaimStores))
+                    continue;
+                stores.AddRange(relyingPartyClaimStores);
             }
 
-            var name = claims.FirstOrDefault(c => c.Type == nameClaimType)?.Value;
-            if (name != null && !claims.Any(c => c.Type == ClaimTypes.NameIdentifier))
+            foreach (var store in stores.Distinct())
             {
-                _logger.LogDebug($"Adding claim: {ClaimTypes.NameIdentifier}");
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, name, ClaimValueTypes.String));
+                if (!store.CanGenerateClaims(party.AppliesTo)) continue;
+
+                _logger.LogDebug($"Attempting to get {requirement} claims from {store.GetType().Name}");
+                var requiredClaims = await store.GetClaimsAsync(source, party);
+                foreach (var claim in requiredClaims)
+                {
+                    _logger.LogTrace($"Adding {requirement} claim '{claim.Type}' from {store.GetType().Name}");
+                    claims.Add(claim);
+                    if (list.Contains(claim.Type))
+                        list.Remove(claim.Type);
+                }
             }
-            if (!claims.Any(c => c.Type == ClaimTypes.AuthenticationInstant))
+
+            var copy = list.ToArray();
+            foreach(var type in copy)
             {
-                var now = AuthenticationInstantClaim.Now;
-                _logger.LogDebug($"Adding claim: {now.Type}");
-                claims.Add(AuthenticationInstantClaim.Now);
+                var claim = source.FindFirst(type);
+                if (claim == null) continue;
+
+                _logger.LogDebug($"Adding {requirement} claim '{type}' from source identity.");
+                claims.Add(claim);
+                list.Remove(type);
             }
-            if (!claims.Any(c => c.Type == ClaimTypes.AuthenticationMethod))
-            {
-                _logger.LogDebug($"Adding claim: {ClaimTypes.AuthenticationMethod}");
-                claims.Add(new Claim(ClaimTypes.AuthenticationMethod, "http://schemas.microsoft.com/ws/2008/06/identity/authenticationmethod/unspecified", ClaimValueTypes.String));
-            }
+
+            var success = !list.Any();
+            if (!success)
+                WsTrustLogMessages.UnableToGetAllClaims(_logger, requirement, new UnableToGetAllClaims { UnpopulatedClaimTypes = list }, null);
+
+            return success;
         }
     }
 }
