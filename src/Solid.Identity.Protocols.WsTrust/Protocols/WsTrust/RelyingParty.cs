@@ -17,14 +17,16 @@ namespace Solid.Identity.Protocols.WsTrust
         public RelyingParty(string appliesTo) => AppliesTo = appliesTo;
         public string Id => AppliesTo ?? throw new ArgumentNullException(nameof(AppliesTo));
         public string AppliesTo { get; internal set; }
+        public string ExpectedIssuer { get; set; }
         public string ReplyTo { get; set; }
         public SecurityKey SigningKey { get; set; }
-        public SecurityAlgorithm SigningAlgorithm { get; set; }
+        public SigningAlgorithm SigningAlgorithm { get; set; }
         public SecurityKey EncryptingKey { get; set; }
-        public SecurityAlgorithm EncryptingAlgorithm { get; set; }
+        public EncryptionAlgorithm EncryptingAlgorithm { get; set; }
+        public bool RequiresEncryptedToken { get; set; } = false;
         public string Name { get; set; }
         public TimeSpan TokenLifeTime { get; set; } = TimeSpan.Zero;
-        public string TokenType { get; set; }
+        public string DefaultTokenType { get; set; }
         public bool Enabled { get; set; } = true;
         public IEnumerable<string> RequiredClaims { get; set; } = Enumerable.Empty<string>();
         public IEnumerable<string> OptionalClaims { get; set; } = Enumerable.Empty<string>();

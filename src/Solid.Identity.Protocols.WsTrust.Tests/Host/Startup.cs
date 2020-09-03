@@ -67,8 +67,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                             var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));
                             party.Name = "My test relying party";
                             party.SigningKey = new X509SecurityKey(certificate);
-                            party.SigningAlgorithm = SecurityAlgorithm.Asymmetric.RsaSha256;
-                            party.TokenType = Saml2Constants.Saml2TokenProfile11;
+                            party.SigningAlgorithm = SigningAlgorithm.RsaSha256;
+                            party.DefaultTokenType = Saml2Constants.Saml2TokenProfile11;
                         });
                     })
                 ;

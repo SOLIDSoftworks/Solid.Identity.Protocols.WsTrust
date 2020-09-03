@@ -42,7 +42,7 @@ namespace Solid.Identity.Protocols.WsTrust
             _logger.LogInformation($"Getting required claims for party: {relyingParty.AppliesTo}");
             if (required.Any())
             {
-                if (!await TryGetClaimsAsync(relyingParty.RequiredClaims ?? Enumerable.Empty<string>(), "required", identity, relyingParty, claims))
+                if (!await TryGetClaimsAsync(required, nameof(required), identity, relyingParty, claims))
                     throw new SecurityException($"Unable to get all required claim values for party: {relyingParty.AppliesTo}");
             }
             else
@@ -52,7 +52,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
             _logger.LogInformation($"Getting optional claims for party: {relyingParty.AppliesTo}");
             if(optional.Any())
-                _ = await TryGetClaimsAsync(relyingParty.OptionalClaims ?? Enumerable.Empty<string>(), "optional", identity, relyingParty, claims);
+                _ = await TryGetClaimsAsync(optional, nameof(optional), identity, relyingParty, claims);
             else
                 _logger.LogInformation($"No optional claims for party: {relyingParty.AppliesTo}");
 

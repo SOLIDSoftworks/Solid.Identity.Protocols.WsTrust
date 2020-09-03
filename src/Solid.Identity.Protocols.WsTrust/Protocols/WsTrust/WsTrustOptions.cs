@@ -15,8 +15,9 @@ namespace Solid.Identity.Protocols.WsTrust
         public string Issuer { get; set; }
         public string DefaultAppliesTo { get; set; }
         public SecurityKey DefaultSigningKey { get; set; }
-        public SecurityAlgorithm DefaultSigningAlgorithm { get; set; } = SecurityAlgorithm.Asymmetric.RsaSha256;
-        public EncryptingCredentials DefaultEncryptingCredentials { get; set; }
+        public SigningAlgorithm DefaultSigningAlgorithm { get; set; } = SigningAlgorithm.RsaSha256;
+        public SecurityKey DefaultEncryptionKey { get; set; }
+        public EncryptionAlgorithm DefaultEncryptionAlgorithm { get; set; } = EncryptionAlgorithm.Aes128;
         public TimeSpan DefaultTokenLifetime { get; set; } = WsTrustDefaults.DefaultTokenLifetime;
         public int DefaultSymmetricKeySizeInBits { get; set; } = WsTrustDefaults.DefaultSymmetricKeySizeInBits;
         public int DefaultMaxSymmetricKeySizeInBits { get; set; } = WsTrustDefaults.DefaultMaxSymmetricKeySizeInBits;
@@ -62,8 +63,29 @@ namespace Solid.Identity.Protocols.WsTrust
             return this;
         }
 
+        public WsTrustOptions AddSupportedKeyWrapAlgorithm(string algorithm, Func<IServiceProvider, KeyWrapProvider> factory)
+        {
+            SupportedKeyWrapAlgorithms[algorithm] = new KeyWrapProviderDescriptor(algorithm, (services, args) => factory(services));
+            return this;
+        }
+
+        public WsTrustOptions AddSupportedKeyedHashAlgorithm(string algorithm, Func<IServiceProvider, KeyedHashAlgorithm> factory)
+        {
+            SupportedKeyedHashAlgorithms[algorithm] = new KeyedHashAlgorithmDescriptor(algorithm, (services, args) => factory(services));
+            return this;
+        }
+
+        public WsTrustOptions AddSupportedEncryptionAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, string, AuthenticatedEncryptionProvider> factory)
+        {
+            SupportedEncryptionAlgorithms[algorithm] = new AuthenticatedEncryptionProviderDescriptor(algorithm, (services, args) => factory(services, args.FirstOrDefault() as SecurityKey, args.ElementAtOrDefault(1) as string));
+            return this;
+        }
+
         internal IDictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
         internal IDictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
+        internal IDictionary<string, KeyWrapProviderDescriptor> SupportedKeyWrapAlgorithms { get; } = new Dictionary<string, KeyWrapProviderDescriptor>();
+        internal IDictionary<string, KeyedHashAlgorithmDescriptor> SupportedKeyedHashAlgorithms { get; } = new Dictionary<string, KeyedHashAlgorithmDescriptor>();
+        internal IDictionary<string, AuthenticatedEncryptionProviderDescriptor> SupportedEncryptionAlgorithms { get; } = new Dictionary<string, AuthenticatedEncryptionProviderDescriptor>();
         internal IDictionary<string, IRelyingParty> RelyingParties { get; } = new Dictionary<string, IRelyingParty>();
 
         internal IDictionary<string, IIdentityProvider> IdentityProviders { get; } = new Dictionary<string, IIdentityProvider>();

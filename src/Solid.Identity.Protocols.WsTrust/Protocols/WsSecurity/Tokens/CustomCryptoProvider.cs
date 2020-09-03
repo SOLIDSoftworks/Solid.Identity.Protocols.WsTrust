@@ -5,6 +5,7 @@ using Solid.Identity.Protocols.WsTrust;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Solid.Identity.Protocols.WsSecurity.Tokens
@@ -29,13 +30,28 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
         {
             if (_options.SupportedHashAlgorithms.TryGetValue(algorithm, out var hashAlgorithmDescriptor))
             {
-                _logger.LogDebug($"Creating hash algorithm for '{algorithm}'");
+                _logger.LogDebug($"Creating {nameof(HashAlgorithm)} for '{algorithm}'");
                 return hashAlgorithmDescriptor.Factory(_services, args);
             }
             if (_options.SupportedSignatureAlgorithms.TryGetValue(algorithm, out var signatureProviderDescriptor))
             {
-                _logger.LogDebug($"Creating signature provider for '{algorithm}'");
+                _logger.LogDebug($"Creating {nameof(SignatureProvider)} for '{algorithm}'");
                 return signatureProviderDescriptor.Factory(_services, args);
+            }
+            if (_options.SupportedKeyedHashAlgorithms.TryGetValue(algorithm, out var keyedHashAlgorithmDescriptor))
+            {
+                _logger.LogDebug($"Creating {nameof(KeyedHashAlgorithm)} for '{algorithm}'");
+                return keyedHashAlgorithmDescriptor.Factory(_services, args);
+            }
+            if (_options.SupportedEncryptionAlgorithms.TryGetValue(algorithm, out var authenticatedEncryptionProviderDescriptor))
+            {
+                _logger.LogDebug($"Creating {nameof(AuthenticatedEncryptionProvider)} for '{algorithm}'");
+                return authenticatedEncryptionProviderDescriptor.Factory(_services, args);
+            }
+            if (_options.SupportedKeyWrapAlgorithms.TryGetValue(algorithm, out var keyWrapProviderDescriptor))
+            {
+                _logger.LogDebug($"Creating {nameof(KeyWrapProvider)} for '{algorithm}'");
+                return keyWrapProviderDescriptor.Factory(_services, args);
             }
 
             throw new NotSupportedException(algorithm);
@@ -45,7 +61,10 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
         {
             return 
                 _options.SupportedHashAlgorithms.ContainsKey(algorithm) ||
-                _options.SupportedSignatureAlgorithms.ContainsKey(algorithm)
+                _options.SupportedSignatureAlgorithms.ContainsKey(algorithm) ||
+                _options.SupportedEncryptionAlgorithms.ContainsKey(algorithm) ||
+                _options.SupportedKeyedHashAlgorithms.ContainsKey(algorithm) ||
+                _options.SupportedKeyWrapAlgorithms.ContainsKey(algorithm)
             ;
         }
 

@@ -66,27 +66,22 @@ namespace Solid.Identity.Protocols.WsTrust
             if (request == null)
                 throw new InvalidRequestException("ID2051");
 
-            if (request.AppliesTo == null && Options.DefaultAppliesTo != null)
-                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
-
-            var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
-            if (request.TokenType == null)
-                request.TokenType = party?.TokenType ?? Options.DefaultTokenType;
-
+            await ApplyDefaultIssueValuesAsync(request, cancellationToken);
             await ValidateRequestAsync(request, cancellationToken);
             await ValidatePartnerAsync(principal, request, cancellationToken);
 
+            var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
             if (party == null)
                 throw new InvalidOperationException($"Relying party not found: {request.AppliesTo.EndpointReference.Uri}");
 
-            var scope = await GetScopeAsync(principal, request, party, cancellationToken);
+            var scope = await CreateScopeAsync(principal, request, party, cancellationToken);
             if (scope == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2013"));
 
             if (!await scope.RelyingParty.AuthorizeAsync(Services, principal))
                 throw new SecurityException($"User is not authorized to be issued a token for {scope.RelyingParty.AppliesTo}");
 
-            var descriptor = await CreateSecurityTokenDescriptorAsync(request, scope);
+            var descriptor = await CreateSecurityTokenDescriptorAsync(request, scope, cancellationToken);
             if (descriptor == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2003"));
             if (descriptor.SigningCredentials == null)
@@ -146,10 +141,16 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<WsTrustResponse>(new WsTrustResponse(response));
         }
 
+        private IDictionary<string, IRelyingParty> _cache = new Dictionary<string, IRelyingParty>();
+
         protected virtual async ValueTask<IRelyingParty> GetRelyingPartyAsync(AppliesTo appliesTo, CancellationToken cancellationToken)
         {
             if (appliesTo == null) return null;
-            return await RelyingParties.GetRelyingPartyAsync(appliesTo.EndpointReference.Uri);
+            var id = appliesTo.EndpointReference.Uri;
+            if (_cache.TryGetValue(id, out var party)) return party;
+            var p = await RelyingParties.GetRelyingPartyAsync(appliesTo.EndpointReference.Uri);
+            _cache.Add(id, p);
+            return p;
         }
 
         protected virtual ValueTask<SecurityTokenHandler> GetSecurityTokenHandlerAsync(string tokenType, CancellationToken cancellationToken)
@@ -158,30 +159,28 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<SecurityTokenHandler>(handler);
         }
 
-        protected virtual ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope)
+        protected virtual async ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
         {
-            var lifetime = GetTokenLifetime(request?.Lifetime, scope);
+            var lifetime = CreateTokenLifetime(request?.Lifetime, scope);
             var descriptor = new RequestedSecurityTokenDescriptor
             {
+                Audience = scope.RelyingParty.AppliesTo,
                 IssuedAt = lifetime.Created,
                 NotBefore = lifetime.Created,
                 Expires = lifetime.Expires,
-                Issuer = Options.Issuer,
-                SigningCredentials = CreateSigningCredentials(scope),
-                EncryptingCredentials = CreateEncryptingCredentials(scope),
-                TokenType = request.TokenType
+                Issuer = scope.RelyingParty.ExpectedIssuer ?? Options.Issuer,
+                SigningCredentials = scope.SigningCredentials,
+                EncryptingCredentials = scope.EncryptingCredentials,
+                TokenType = request.TokenType,
             };
 
-            return new ValueTask<RequestedSecurityTokenDescriptor>(descriptor);
+            return descriptor;
         }
 
-        protected virtual SigningCredentials CreateSigningCredentials(Scope scope)
+        protected virtual SigningCredentials CreateSigningCredentials(IRelyingParty party)
         {
-            var key = scope.SigningKey;
-            var algorithm = scope.SigningAlgorithm;
-
-            if (algorithm == null)
-                algorithm = Options.DefaultSigningAlgorithm;
+            var key = party.SigningKey;
+            var algorithm = party.SigningAlgorithm ?? Options.DefaultSigningAlgorithm;
 
             if (key == null)
             {
@@ -196,17 +195,25 @@ namespace Solid.Identity.Protocols.WsTrust
             return new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
         }
 
-        protected virtual EncryptingCredentials CreateEncryptingCredentials(Scope scope)
+        protected virtual EncryptingCredentials CreateEncryptingCredentials(IRelyingParty party)
         {
-            var key = scope.EncryptingKey;
-            var algorithm = scope.EncryptingAlgorithm;
+            if (!party.RequiresEncryptedToken) return null;
+
+            var key = party.EncryptingKey;
+            var algorithm = party.EncryptingAlgorithm ?? Options.DefaultEncryptionAlgorithm;
+
+            if (key == null)
+            {
+                key = Options.DefaultSigningKey;
+                algorithm = Options.DefaultEncryptionAlgorithm;
+            }
 
             if (key == null) return null;
             if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
-            if (algorithm.Algorithm == null) throw new ArgumentNullException(nameof(algorithm.Algorithm));
-            if (key is SymmetricSecurityKey symmetric) return new EncryptingCredentials(symmetric, algorithm.Algorithm);
-            if (algorithm.Digest == null) throw new ArgumentNullException(nameof(algorithm.Digest));
-            return new EncryptingCredentials(key, algorithm.Algorithm, algorithm.Digest);
+            if (algorithm.KeyWrapAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.KeyWrapAlgorithm));
+            if (key is SymmetricSecurityKey symmetric) return new EncryptingCredentials(symmetric, algorithm.KeyWrapAlgorithm);
+            if (algorithm.DataEncryptionAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.DataEncryptionAlgorithm));
+            return new EncryptingCredentials(key, algorithm.KeyWrapAlgorithm, algorithm.DataEncryptionAlgorithm);
         }
 
         protected virtual async ValueTask ValidatePartnerAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
@@ -227,6 +234,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask ValidateRequestAsync(WsTrustRequest request, CancellationToken cancellationToken)
         {
+            // TODO: add virtual methods for each validation so they can be overridden seperately
+
             // currently we only support RST/RSTR pattern
             if (request == null)
                 throw new InvalidRequestException("ID2051");
@@ -255,19 +264,19 @@ namespace Solid.Identity.Protocols.WsTrust
             if (GetSecurityTokenHandlerAsync(request.TokenType, cancellationToken) == null)
                 throw new UnsupportedTokenTypeBadRequestException(request.TokenType);
 
-            request.KeyType = (string.IsNullOrEmpty(request.KeyType)) ? Constants.WsTrustKeyTypes.Symmetric : request.KeyType;
+            if (!IsSupportedKeyType(request.KeyType))
+                throw new InvalidRequestException($"Unsupported key type: {request.KeyType}");
 
-            if (request.KeyType.Equals(Constants.WsTrustKeyTypes.Symmetric, StringComparison.OrdinalIgnoreCase))
-            {
-                //
-                // Check if the key size is within certain limit to prevent Dos attack
-                //
-                if (!request.KeySizeInBits.HasValue)
-                    request.KeySizeInBits = Options.DefaultSymmetricKeySizeInBits;
+            //
+            // Check if the key size is within certain limit to prevent Dos attack
+            //
+            if (request.KeyType.Equals(Constants.WsTrustKeyTypes.Symmetric, StringComparison.OrdinalIgnoreCase) &&
+                request.KeySizeInBits > Options.DefaultMaxSymmetricKeySizeInBits)
+                throw new InvalidRequestException("ID2056", request.KeySizeInBits.Value, Options.DefaultMaxSymmetricKeySizeInBits);
 
-                if (request.KeySizeInBits > Options.DefaultMaxSymmetricKeySizeInBits)
-                    throw new InvalidRequestException("ID2056", request.KeySizeInBits.Value, Options.DefaultMaxSymmetricKeySizeInBits);
-            }
+            if (request.KeyType.Equals(Constants.WsTrustKeyTypes.PublicKey, StringComparison.OrdinalIgnoreCase) &&
+                request.UseKey == null)
+                throw new InvalidRequestException($"Asymmetric key type requires a UseKey.");
         }
 
         protected virtual async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
@@ -276,7 +285,7 @@ namespace Solid.Identity.Protocols.WsTrust
             return subject;
         }
 
-        protected virtual async ValueTask<Scope> GetScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
+        protected virtual async ValueTask<Scope> CreateScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
         {
             var identity = ClaimsPrincipal.PrimaryIdentitySelector(principal.Identities);
             var claims = await MapIncomingClaimsAsync(principal.Claims);
@@ -304,7 +313,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// C           E                   C                   E
         /// </summary>
         /// <param name="requestLifetime">The requestor's desired life time.</param>
-        protected virtual Lifetime GetTokenLifetime(Lifetime requestLifetime, Scope scope)
+        protected virtual Lifetime CreateTokenLifetime(Lifetime requestLifetime, Scope scope)
         {
             DateTime created;
             DateTime expires;
@@ -348,13 +357,36 @@ namespace Solid.Identity.Protocols.WsTrust
             => IsSupportedSymmetricKeyType(keyType) || IsSupportedBearerKeyType(keyType) || IsSupportedAsymmetricKeyType(keyType);
 
         protected virtual bool IsSupportedAsymmetricKeyType(string keyType)
-            => StringComparer.Ordinal.Equals(keyType, MicrosoftKeyTypes.Asymmetric);
+            => StringComparer.Ordinal.Equals(keyType, Constants.WsTrustKeyTypes.PublicKey) || StringComparer.Ordinal.Equals(keyType, MicrosoftKeyTypes.Asymmetric);
 
         protected virtual bool IsSupportedSymmetricKeyType(string keyType)
             => StringComparer.Ordinal.Equals(keyType, Constants.WsTrustKeyTypes.Symmetric) || StringComparer.Ordinal.Equals(keyType, MicrosoftKeyTypes.Symmetric);
 
         protected virtual bool IsSupportedBearerKeyType(string keyType)
             => StringComparer.Ordinal.Equals(keyType, Constants.WsTrustKeyTypes.Bearer) || StringComparer.Ordinal.Equals(keyType, MicrosoftKeyTypes.Bearer);
+
+        protected virtual async ValueTask ApplyDefaultIssueValuesAsync(WsTrustRequest request, CancellationToken cancellationToken)
+        {
+            if (request.AppliesTo == null && Options.DefaultAppliesTo != null)
+                request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
+
+            var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
+            if (request.TokenType == null)
+                request.TokenType = party?.DefaultTokenType ?? Options.DefaultTokenType;
+
+            var keyType = string.IsNullOrEmpty(request.KeyType) ? Constants.WsTrustKeyTypes.Symmetric : request.KeyType;
+            if (IsSupportedAsymmetricKeyType(keyType))
+                request.KeyType = Constants.WsTrustKeyTypes.PublicKey;
+            else if (IsSupportedSymmetricKeyType(keyType))
+                request.KeyType = Constants.WsTrustKeyTypes.Symmetric;
+            else if (IsSupportedBearerKeyType(keyType))
+                request.KeyType = Constants.WsTrustKeyTypes.Bearer;
+            else
+                request.KeyType = keyType;
+
+            if (request.KeyType == Constants.WsTrustKeyTypes.Symmetric && !request.KeySizeInBits.HasValue)
+                request.KeySizeInBits = Options.DefaultSymmetricKeySizeInBits;
+        }
 
         internal void Initialize(WsTrustConstants constants)
             => Constants = constants;

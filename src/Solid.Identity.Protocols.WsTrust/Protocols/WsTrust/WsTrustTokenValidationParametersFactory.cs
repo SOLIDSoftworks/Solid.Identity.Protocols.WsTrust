@@ -61,6 +61,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
                 ClockSkew = _options.MaxClockSkew,
                 IssuerSigningKeyResolver = ResolveIssuerSigningKeys,
+                TokenDecryptionKeyResolver = ResolveDecryptionKeys,
                 IssuerValidator = ValidateIssuer,
                 AudienceValidator = ValidateAudiences
             };
@@ -72,6 +73,18 @@ namespace Solid.Identity.Protocols.WsTrust
             };
 
             return parameters;
+        }
+
+        protected virtual IEnumerable<SecurityKey> ResolveDecryptionKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)
+        {
+            _logger.LogDebug("Finding decryption keys.");
+
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            var defaults = new[] { _options.DefaultEncryptionKey };
+            if (!properties.TryGetValue("rps", out var obj)) return defaults;
+            if (!(obj is IDictionary<string, IRelyingParty> rps)) return defaults;
+
+            return rps.Select(rp => rp.Value.EncryptingKey).Where(key => key != null).Concat(defaults);
         }
 
         protected virtual IEnumerable<SecurityKey> ResolveIssuerSigningKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)

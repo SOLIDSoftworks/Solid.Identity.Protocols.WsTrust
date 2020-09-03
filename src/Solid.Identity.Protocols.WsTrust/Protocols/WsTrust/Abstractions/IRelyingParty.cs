@@ -11,15 +11,17 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
     public interface IRelyingParty
     {
         string Id { get; }
+        string ExpectedIssuer { get; }
         string AppliesTo { get; }
         string ReplyTo { get; }
         SecurityKey SigningKey { get; }
-        SecurityAlgorithm SigningAlgorithm { get; }
+        SigningAlgorithm SigningAlgorithm { get; }
         SecurityKey EncryptingKey { get; }
-        SecurityAlgorithm EncryptingAlgorithm { get; }
+        EncryptionAlgorithm EncryptingAlgorithm { get; }
+        bool RequiresEncryptedToken { get; }
         string Name { get; }
         TimeSpan TokenLifeTime { get; }
-        string TokenType { get; }
+        string DefaultTokenType { get; }
         bool Enabled { get; }
         IEnumerable<string> RequiredClaims { get; }
         IEnumerable<string> OptionalClaims { get; }
