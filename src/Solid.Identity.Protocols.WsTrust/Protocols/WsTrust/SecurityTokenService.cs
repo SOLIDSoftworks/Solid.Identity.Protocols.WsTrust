@@ -21,6 +21,7 @@ using Microsoft.Extensions.Logging;
 using Solid.Identity.Protocols.WsSecurity;
 using System.Security;
 using System.Linq;
+using Solid.Identity.Protocols.WsTrust.Logging;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -87,7 +88,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (descriptor.SigningCredentials == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID2079"));
 
-            if(scope.TokenEncryptionRequired && descriptor.EncryptingCredentials == null)
+            if(scope.RelyingParty.RequiresEncryptedToken && descriptor.EncryptingCredentials == null)
                 throw new InvalidOperationException(ErrorMessages.GetFormattedMessage("ID4184"));
 
             var handler = await GetSecurityTokenHandlerAsync(descriptor.TokenType, cancellationToken);
@@ -177,7 +178,7 @@ namespace Solid.Identity.Protocols.WsTrust
             return descriptor;
         }
 
-        protected virtual SigningCredentials CreateSigningCredentials(IRelyingParty party)
+        protected virtual ValueTask<SigningCredentials> CreateSigningCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
             var key = party.SigningKey;
             var algorithm = party.SigningAlgorithm ?? Options.DefaultSigningAlgorithm;
@@ -188,17 +189,29 @@ namespace Solid.Identity.Protocols.WsTrust
                 algorithm = Options.DefaultSigningAlgorithm;
             }
 
-            if (key == null) return null;
+            if (key == null) return new ValueTask<SigningCredentials>();
+
+            var credentials = null as SigningCredentials;
             if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
             if (algorithm.Algorithm == null) throw new ArgumentNullException(nameof(algorithm.Algorithm));
-            if (string.IsNullOrEmpty(algorithm.Digest)) return new SigningCredentials(key, algorithm.Algorithm);
-            return new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
+
+            if (string.IsNullOrEmpty(algorithm.Digest)) credentials = new SigningCredentials(key, algorithm.Algorithm);
+            else credentials = new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
+
+            var information = new SigningCredentialsInformation
+            {
+                SecurityKeyName = (key is X509SecurityKey x509) ? x509.Certificate.Subject : key.KeyId,
+                SecurityKeyType = key.GetType().Name,
+                Algorithm = algorithm.Algorithm,
+                Digest = algorithm.Digest
+            };
+            WsTrustLogMessages.SigningCredentialsCreated(Logger, information, null);
+
+            return new ValueTask<SigningCredentials>(credentials);
         }
 
-        protected virtual EncryptingCredentials CreateEncryptingCredentials(IRelyingParty party)
+        protected virtual ValueTask<EncryptingCredentials> CreateEncryptingCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
-            if (!party.RequiresEncryptedToken) return null;
-
             var key = party.EncryptingKey;
             var algorithm = party.EncryptingAlgorithm ?? Options.DefaultEncryptionAlgorithm;
 
@@ -208,12 +221,29 @@ namespace Solid.Identity.Protocols.WsTrust
                 algorithm = Options.DefaultEncryptionAlgorithm;
             }
 
-            if (key == null) return null;
+            if (key == null) return new ValueTask<EncryptingCredentials>();
+
+            var credentials = null as EncryptingCredentials;
             if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
-            if (algorithm.KeyWrapAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.KeyWrapAlgorithm));
-            if (key is SymmetricSecurityKey symmetric) return new EncryptingCredentials(symmetric, algorithm.KeyWrapAlgorithm);
             if (algorithm.DataEncryptionAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.DataEncryptionAlgorithm));
-            return new EncryptingCredentials(key, algorithm.KeyWrapAlgorithm, algorithm.DataEncryptionAlgorithm);
+
+            if (key is SymmetricSecurityKey symmetric) credentials = new EncryptingCredentials(symmetric, algorithm.DataEncryptionAlgorithm);
+            else if (algorithm.KeyWrapAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.KeyWrapAlgorithm));
+            else credentials = new EncryptingCredentials(key, algorithm.KeyWrapAlgorithm, algorithm.DataEncryptionAlgorithm);
+
+            if(credentials != null)
+            {
+                var information = new EncryptingCredentialsInformation
+                {
+                    SecurityKeyName = (key is X509SecurityKey x509) ? x509.Certificate.Subject : key.KeyId,
+                    SecurityKeyType = key.GetType().Name,
+                    DataEncryptionAlgorithm = algorithm.DataEncryptionAlgorithm,
+                    KeyWrapAlgorithm = algorithm.KeyWrapAlgorithm
+                };
+                WsTrustLogMessages.EncryptingCredentialsCreated(Logger, information, null);
+            }
+
+            return new ValueTask<EncryptingCredentials>(credentials);
         }
 
         protected virtual async ValueTask ValidatePartnerAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
@@ -243,11 +273,9 @@ namespace Solid.Identity.Protocols.WsTrust
             if(request.AppliesTo == null)
                 throw new InvalidRequestException("AppliesTo not specified.");
 
-            //// STS only support Issue for now
-            //if (request.RequestType != null && request.RequestType != RequestTypes.Issue)
-            //{
-            //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidRequestException(SR.GetString(SR.ID2052)));
-            //}
+            // STS only support Issue for now
+            if (request.RequestType != null && request.RequestType != Constants.WsTrustActions.Issue)
+                throw new InvalidRequestException("ID2052");
 
             // key type must be one of the supported types
             if (request.KeyType != null && !IsSupportedKeyType(request.KeyType))
@@ -291,6 +319,10 @@ namespace Solid.Identity.Protocols.WsTrust
             var claims = await MapIncomingClaimsAsync(principal.Claims);
             var user = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);
             var scope = new Scope(user, party);
+
+            scope.SigningCredentials = await CreateSigningCredentialsAsync(party, cancellationToken);   
+            scope.EncryptingCredentials = await CreateEncryptingCredentialsAsync(party, cancellationToken);
+
             return scope;
         }
 

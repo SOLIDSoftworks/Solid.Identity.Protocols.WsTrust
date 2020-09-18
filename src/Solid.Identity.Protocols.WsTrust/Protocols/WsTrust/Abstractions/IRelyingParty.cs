@@ -19,6 +19,7 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         SecurityKey EncryptingKey { get; }
         EncryptionAlgorithm EncryptingAlgorithm { get; }
         bool RequiresEncryptedToken { get; }
+        bool RequiresEncryptedSymmetricKeys { get; }
         string Name { get; }
         TimeSpan TokenLifeTime { get; }
         string DefaultTokenType { get; }

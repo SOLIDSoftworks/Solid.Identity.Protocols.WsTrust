@@ -24,6 +24,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public SecurityKey EncryptingKey { get; set; }
         public EncryptionAlgorithm EncryptingAlgorithm { get; set; }
         public bool RequiresEncryptedToken { get; set; } = false;
+        public bool RequiresEncryptedSymmetricKeys { get; set; } = false;
         public string Name { get; set; }
         public TimeSpan TokenLifeTime { get; set; } = TimeSpan.Zero;
         public string DefaultTokenType { get; set; }

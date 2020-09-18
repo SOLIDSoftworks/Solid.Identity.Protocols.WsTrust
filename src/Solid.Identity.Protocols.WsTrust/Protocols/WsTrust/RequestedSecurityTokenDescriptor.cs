@@ -11,6 +11,7 @@ namespace Solid.Identity.Protocols.WsTrust
     public class RequestedSecurityTokenDescriptor : SecurityTokenDescriptor
     {
         public SecurityToken Token { get; set; }
+        public RequestedProofToken RequestedProofToken { get; set; }
         public SecurityTokenReference AttachedReference { get; set; }
         public SecurityTokenReference UnattachedReference { get; set; }
         public string TokenType { get; set; }
@@ -25,6 +26,9 @@ namespace Solid.Identity.Protocols.WsTrust
                 response.RequestedSecurityToken = new RequestedSecurityToken(TokenElement);
             else if (Token != null)
                 response.RequestedSecurityToken = new RequestedSecurityToken(Token);
+
+            if(RequestedProofToken != null)
+                response.RequestedProofToken = RequestedProofToken;
 
             if (AttachedReference != null)
                 response.AttachedReference = AttachedReference;
