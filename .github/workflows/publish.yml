@@ -6,6 +6,7 @@ on:
 
 env:
   version: 0.1.${{ github.run_number }}
+  package_version: ${{ env.version }}-beta  
 
 jobs:
   publish:
@@ -26,6 +27,6 @@ jobs:
       - name: Test
         run: dotnet test ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
       - name: Package
-        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build --version-suffix beta --include-symbols -p:VersionPrefix=${{ env.version }} -o ./ -v diag
+        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build --version-suffix beta -p:Version=${{ env.package_version }} -o ./ -v diag
       - name: Push
-        run: dotnet nuget push Solid.Identity.Protocols.WsTrust.${{env.version}}.nupkg --api-key ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push Solid.Identity.Protocols.WsTrust.${{env.package_version}}.nupkg --api-key ${{secrets.NUGET_API_KEY}}
