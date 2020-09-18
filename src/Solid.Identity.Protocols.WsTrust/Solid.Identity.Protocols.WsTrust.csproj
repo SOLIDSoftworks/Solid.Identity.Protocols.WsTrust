@@ -12,13 +12,6 @@
     <RepositoryUrl>https://github.com/SOLIDSoftworks/Solid.Identity.Protocols.WsTrust</RepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  
-  <PropertyGroup>
-    <VersionPrefix></VersionPrefix>
-    <AssemblyVersion></AssemblyVersion>
-    <FileVersion></FileVersion>
-    <InformationalVersion></InformationalVersion>
-  </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.1.2" />
