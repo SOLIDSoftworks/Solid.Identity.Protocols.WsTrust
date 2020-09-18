@@ -28,4 +28,4 @@ jobs:
       - name: Package
         run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build -p:VersionPrefix=${{ env.version }} --version-suffix beta --include-symbols -o ./artifacts
       - name: Push
-        run: dotnet nuget push ./ artifacts/*.nupkg --api-key ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{secrets.NUGET_API_KEY}}
