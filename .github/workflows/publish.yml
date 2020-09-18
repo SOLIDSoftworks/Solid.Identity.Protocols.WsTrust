@@ -1,0 +1,27 @@
+name: publish to nuget
+on:
+  push:
+    branches:
+      - master # Default release branch
+jobs:
+  publish:
+    name: build, pack & publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.200
+
+      - name: Install dependencies
+          run: dotnet restore
+      - name: Build
+          run: dotnet build src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore -p:VersionPrefix=0.1.${{ github.run_number }}
+      - name: Build
+          run: dotnet test src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
+
+
+          # API key to authenticate with NuGet server
+          #NUGET_KEY: ${{secrets.NUGET_API_KEY}}
