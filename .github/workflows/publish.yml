@@ -16,11 +16,11 @@ jobs:
           dotnet-version: 3.1.200
 
       - name: Install dependencies
-          run: dotnet restore
+        run: dotnet restore
       - name: Build
-          run: dotnet build src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore -p:VersionPrefix=0.1.${{ github.run_number }}
+        run: dotnet build src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore -p:VersionPrefix=0.1.${{ github.run_number }}
       - name: Build
-          run: dotnet test src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
+        run: dotnet test src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
 
 
           # API key to authenticate with NuGet server
