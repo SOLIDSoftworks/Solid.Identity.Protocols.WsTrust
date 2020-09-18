@@ -6,7 +6,7 @@ on:
 
 env:
   version: 0.1.${{ github.run_number }}
-  package_version: ${{ env.version }}-beta  
+  package_version: 0.1.${{ github.run_number }}-beta  
 
 jobs:
   publish:
