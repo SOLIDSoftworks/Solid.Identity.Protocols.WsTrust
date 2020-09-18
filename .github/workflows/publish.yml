@@ -18,7 +18,7 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 3.1.101
+          dotnet-version: 3.1.200
 
       - name: Install dependencies
         run: dotnet restore ./src/Solid.Identity.Protocols.WsTrust.sln
@@ -27,6 +27,6 @@ jobs:
       - name: Test
         run: dotnet test ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
       - name: Package
-        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build --version-suffix beta -p:Version=${{ env.package_version }} -o ./ 
+        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-build -p:Version=${{ env.package_version }} -o ./ 
       - name: Push
         run: dotnet nuget push Solid.Identity.Protocols.WsTrust.${{env.package_version}}.nupkg --api-key ${{secrets.NUGET_API_KEY}}
