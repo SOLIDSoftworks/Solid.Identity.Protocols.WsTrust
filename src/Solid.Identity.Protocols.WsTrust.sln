@@ -19,6 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".tests", ".tests", "{6654A9
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Solid.Identity.Protocols.WsTrust.Tests", "Solid.Identity.Protocols.WsTrust.Tests\Solid.Identity.Protocols.WsTrust.Tests.csproj", "{DC41A41B-AE56-44C8-9601-029D7768F0EC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{FD46D756-F3AA-4C22-80C9-76B98936EDFA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{F608432F-DB97-410F-A095-F4382DE20E18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,13 +36,14 @@ Global
 		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DC41A41B-AE56-44C8-9601-029D7768F0EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{DC41A41B-AE56-44C8-9601-029D7768F0EC} = {6654A9A8-AC22-459A-9ECF-8ED326FFC675}
+		{FD46D756-F3AA-4C22-80C9-76B98936EDFA} = {A37ED134-44B7-4CBB-8E3C-0A22EDACD24B}
+		{F608432F-DB97-410F-A095-F4382DE20E18} = {FD46D756-F3AA-4C22-80C9-76B98936EDFA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EC67A6C0-37E7-4E97-B83D-A14CD395ECF7}
