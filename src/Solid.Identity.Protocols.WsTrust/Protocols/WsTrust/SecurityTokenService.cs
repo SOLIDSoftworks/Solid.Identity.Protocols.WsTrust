@@ -167,13 +167,15 @@ namespace Solid.Identity.Protocols.WsTrust
             {
                 Audience = scope.RelyingParty.AppliesTo,
                 IssuedAt = lifetime.Created,
-                NotBefore = lifetime.Created,
                 Expires = lifetime.Expires,
                 Issuer = scope.RelyingParty.ExpectedIssuer ?? Options.Issuer,
                 SigningCredentials = scope.SigningCredentials,
                 EncryptingCredentials = scope.EncryptingCredentials,
                 TokenType = request.TokenType,
             };
+
+            if (lifetime.Created != null)
+                descriptor.NotBefore = lifetime.Created.Value.Subtract(scope.RelyingParty.ClockSkew ?? Options.MaxClockSkew);
 
             return descriptor;
         }
@@ -351,7 +353,7 @@ namespace Solid.Identity.Protocols.WsTrust
             DateTime expires;
 
             var now = SystemClock.UtcNow.UtcDateTime;
-            var lifetime = scope.RelyingParty.TokenLifeTime == TimeSpan.Zero ? Options.DefaultTokenLifetime : scope.RelyingParty.TokenLifeTime; 
+            var lifetime = scope.RelyingParty.TokenLifeTime ?? Options.DefaultTokenLifetime; 
 
             if (requestLifetime == null)
             {
