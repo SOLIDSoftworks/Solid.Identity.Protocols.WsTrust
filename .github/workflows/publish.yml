@@ -1,4 +1,4 @@
-name: publish to nuget
+name: publish 0.1.x to nuget
 on:
   push:
     branches:
@@ -6,10 +6,11 @@ on:
 
 env:
   version: 0.1.${{ github.run_number }}
+  package_version: 0.1.${{ github.run_number }}-beta  
 
 jobs:
   publish:
-    name: build, pack & publish
+    name: build, test, pack, & publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,7 +18,7 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 3.1.101
+          dotnet-version: 3.1.200
 
       - name: Install dependencies
         run: dotnet restore ./src/Solid.Identity.Protocols.WsTrust.sln
@@ -26,6 +27,6 @@ jobs:
       - name: Test
         run: dotnet test ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build
       - name: Package
-        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-restore --no-build --version-suffix beta --include-symbols -p:VersionPrefix=${{ env.version }} -o ./
+        run: dotnet pack ./src/Solid.Identity.Protocols.WsTrust.sln --configuration Release --no-build -p:Version=${{ env.package_version }} -o ./ 
       - name: Push
-        run: dotnet nuget push Solid.Identity.Protocols.WsTrust.${{env.version}}.nupkg --api-key ${{secrets.NUGET_API_KEY}}
+        run: dotnet nuget push Solid.Identity.Protocols.WsTrust.${{env.package_version}}.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_API_KEY}}
