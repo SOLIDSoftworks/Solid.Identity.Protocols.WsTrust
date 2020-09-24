@@ -24,9 +24,11 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         TimeSpan? TokenLifeTime { get; }
         TimeSpan? ClockSkew { get; }
         string DefaultTokenType { get; }
+        bool ValidateTokenType { get; }
+        ICollection<string> SupportedTokenTypes { get; }
         bool Enabled { get; }
-        IEnumerable<string> RequiredClaims { get; }
-        IEnumerable<string> OptionalClaims { get; }
+        ICollection<string> RequiredClaims { get; }
+        ICollection<string> OptionalClaims { get; }
         Func<IServiceProvider, ClaimsPrincipal, ValueTask<bool>> AuthorizeAsync { get; }
     }
 }

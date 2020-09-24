@@ -8,9 +8,12 @@ using Solid.Identity.Protocols.WsSecurity.Abstractions;
 using Solid.Identity.Protocols.WsSecurity.Authentication;
 using Solid.Identity.Protocols.WsSecurity.Tokens;
 using Solid.Identity.Protocols.WsTrust;
+using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Solid.Identity.Protocols.WsTrust.WsTrust13;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -42,6 +45,18 @@ namespace Microsoft.Extensions.DependencyInjection
                     idp.RestrictRelyingParties = false;
                     idp.Name = "Local authority";
                 });
+
+                foreach (var idp in options.IdentityProviders.Values.OfType<IdentityProvider>())
+                {
+                    idp.AllowedRelyingParties = ((List<string>)idp.AllowedRelyingParties).AsReadOnly();
+                }
+
+                foreach (var party in options.RelyingParties.Values.OfType<RelyingParty>())
+                {
+                    party.RequiredClaims = ((List<string>)party.RequiredClaims).AsReadOnly();
+                    party.OptionalClaims = ((List<string>)party.OptionalClaims).AsReadOnly();
+                    party.SupportedTokenTypes = ((List<string>)party.SupportedTokenTypes).AsReadOnly();
+                }
             });
 
             services.TryAddSingleton<ICryptoProvider, CustomCryptoProvider>();

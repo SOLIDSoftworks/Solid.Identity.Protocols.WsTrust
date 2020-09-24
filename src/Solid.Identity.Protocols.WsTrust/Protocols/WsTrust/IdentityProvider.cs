@@ -16,7 +16,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public bool RestrictRelyingParties { get; set; } = true;
 
-        public IList<string> AllowedRelyingParties { get; set; } = new List<string>();
+        public ICollection<string> AllowedRelyingParties { get; internal set; } = new List<string>();
 
         public bool Enabled { get; set; } = true;
 

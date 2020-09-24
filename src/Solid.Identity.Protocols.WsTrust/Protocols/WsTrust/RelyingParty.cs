@@ -30,8 +30,10 @@ namespace Solid.Identity.Protocols.WsTrust
         public TimeSpan? ClockSkew { get; set; }
         public string DefaultTokenType { get; set; }
         public bool Enabled { get; set; } = true;
-        public IEnumerable<string> RequiredClaims { get; set; } = Enumerable.Empty<string>();
-        public IEnumerable<string> OptionalClaims { get; set; } = Enumerable.Empty<string>();
+        public ICollection<string> RequiredClaims { get; internal set; } = new List<string>();
+        public ICollection<string> OptionalClaims { get; internal set; } = new List<string>();
         public Func<IServiceProvider, ClaimsPrincipal, ValueTask<bool>> AuthorizeAsync { get; set; } = (_, __) => new ValueTask<bool>(true);
+        public bool ValidateTokenType { get; set; } = false;
+        public ICollection<string> SupportedTokenTypes { get; internal set; } = new List<string>();
     }
 }

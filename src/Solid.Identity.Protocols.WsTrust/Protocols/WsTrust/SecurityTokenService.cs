@@ -68,12 +68,13 @@ namespace Solid.Identity.Protocols.WsTrust
                 throw new InvalidRequestException("ID2051");
 
             await ApplyDefaultIssueValuesAsync(request, cancellationToken);
-            await ValidateRequestAsync(request, cancellationToken);
-            await ValidatePartnerAsync(principal, request, cancellationToken);
+            await ValidateRequestAsync(principal, request, cancellationToken);
 
             var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
             if (party == null)
                 throw new InvalidOperationException($"Relying party not found: {request.AppliesTo.EndpointReference.Uri}");
+
+            await ValidateRelyingPartyAsync(principal, request, party, cancellationToken);
 
             var scope = await CreateScopeAsync(principal, request, party, cancellationToken);
             if (scope == null)
@@ -170,7 +171,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 Expires = lifetime.Expires,
                 Issuer = scope.RelyingParty.ExpectedIssuer ?? Options.Issuer,
                 SigningCredentials = scope.SigningCredentials,
-                EncryptingCredentials = scope.EncryptingCredentials,
+                EncryptingCredentials = scope.RelyingParty.RequiresEncryptedToken ? scope.EncryptingCredentials : null,
                 TokenType = request.TokenType,
             };
 
@@ -214,6 +215,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual ValueTask<EncryptingCredentials> CreateEncryptingCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
+            if (!party.RequiresEncryptedToken && !party.RequiresEncryptedSymmetricKeys) return new ValueTask<EncryptingCredentials>();
+
             var key = party.EncryptingKey;
             var algorithm = party.EncryptingAlgorithm ?? Options.DefaultEncryptionAlgorithm;
 
@@ -248,25 +251,39 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<EncryptingCredentials>(credentials);
         }
 
-        protected virtual async ValueTask ValidatePartnerAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        protected virtual async ValueTask ValidateIdentityProviderAsync(ClaimsPrincipal principal, WsTrustRequest request, IIdentityProvider identityProvider, CancellationToken cancellationToken)
         {
+            if (identityProvider.RestrictRelyingParties)
+            {
+                var appliesTo = request.AppliesTo.EndpointReference.Uri;
+                if (!identityProvider.AllowedRelyingParties.Contains(appliesTo))
+                    throw new SecurityException($"Identity provider ({identityProvider.Id}) attempting to request token for: {appliesTo}");
+            }
+        }
+
+        protected virtual async ValueTask ValidateRelyingPartyAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
+        {
+            var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
+            var appliesTo = request.AppliesTo.EndpointReference.Uri;
+            if (party.ValidateTokenType && !party.SupportedTokenTypes.Contains(request.TokenType))
+                throw new SecurityException($"Identity provider ({issuer}) attempting to request unsupported token type for: {appliesTo}");
+
+            if (!await party.AuthorizeAsync(Services, principal))
+                throw new SecurityException($"User is not authorized to be issued a token for {party.AppliesTo}");
+        }
+
+        protected virtual async ValueTask ValidateRequestAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
+        {
+            // TODO: add virtual methods for each validation so they can be overridden seperately
+
             var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
             if (issuer != null)
             {
                 var idp = await IdentityProviders.GetIdentityProviderAsync(issuer);
                 if (idp == null)
                     throw new SecurityException($"Unknown token issuer for incoming token: {issuer}");
-                if (!idp.RestrictRelyingParties) return;
-
-                var appliesTo = request.AppliesTo.EndpointReference.Uri;
-                if (!idp.AllowedRelyingParties.Contains(appliesTo))
-                    throw new SecurityException($"Identity provider ({issuer}) attempting to request token for: {appliesTo}");
+                await ValidateIdentityProviderAsync(principal, request, idp, cancellationToken);
             }
-        }
-
-        protected virtual async ValueTask ValidateRequestAsync(WsTrustRequest request, CancellationToken cancellationToken)
-        {
-            // TODO: add virtual methods for each validation so they can be overridden seperately
 
             // currently we only support RST/RSTR pattern
             if (request == null)
@@ -404,6 +421,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (request.AppliesTo == null && Options.DefaultAppliesTo != null)
                 request.AppliesTo = new AppliesTo(new EndpointReference(Options.DefaultAppliesTo));
 
+            // TODO: try to do this only once
             var party = await GetRelyingPartyAsync(request.AppliesTo, cancellationToken);
             if (request.TokenType == null)
                 request.TokenType = party?.DefaultTokenType ?? Options.DefaultTokenType;
