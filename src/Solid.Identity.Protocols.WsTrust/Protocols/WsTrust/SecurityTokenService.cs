@@ -265,7 +265,7 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
             var appliesTo = request.AppliesTo.EndpointReference.Uri;
-            if (party.ValidateTokenType && !party.SupportedTokenTypes.Contains(request.TokenType))
+            if (party.ValidateRequestedTokenType && !party.SupportedTokenTypes.Contains(request.TokenType))
                 throw new SecurityException($"Identity provider ({issuer}) attempting to request unsupported token type for: {appliesTo}");
 
             if (!await party.AuthorizeAsync(Services, principal))

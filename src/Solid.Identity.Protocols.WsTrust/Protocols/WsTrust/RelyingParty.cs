@@ -33,7 +33,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public ICollection<string> RequiredClaims { get; internal set; } = new List<string>();
         public ICollection<string> OptionalClaims { get; internal set; } = new List<string>();
         public Func<IServiceProvider, ClaimsPrincipal, ValueTask<bool>> AuthorizeAsync { get; set; } = (_, __) => new ValueTask<bool>(true);
-        public bool ValidateTokenType { get; set; } = false;
+        public bool ValidateRequestedTokenType { get; set; } = false;
         public ICollection<string> SupportedTokenTypes { get; internal set; } = new List<string>();
     }
 }
