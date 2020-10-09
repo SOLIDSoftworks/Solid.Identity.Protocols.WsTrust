@@ -59,7 +59,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                             {
                                 var publicCertificate = new X509Certificate2(certificate.Export(X509ContentType.Cert));
                                 idp.AllowedRelyingParties.Add("urn:tests");
-                                idp.SecurityKey = new X509SecurityKey(publicCertificate);
+                                idp.SecurityKeys.Add(new X509SecurityKey(publicCertificate));
                             }
                         });
                         options.AddRelyingParty("urn:tests", party =>

@@ -73,7 +73,7 @@ namespace Solid.Identity.Protocols.WsTrust
                     return provider;
                 }
             }
-            var idp = Options.IdentityProviders.Values.FirstOrDefault(i => i.Enabled && i.SecurityKey?.Equals(key) == true);
+            var idp = Options.IdentityProviders.Values.FirstOrDefault(i => i.Enabled && i.SecurityKeys?.Contains(key) == true);
             if(idp != null)
                 _logger.LogInformation($"Found {idp.Name} in memory.");
             else
