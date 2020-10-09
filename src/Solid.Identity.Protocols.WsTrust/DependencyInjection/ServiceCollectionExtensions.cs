@@ -49,6 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 foreach (var idp in options.IdentityProviders.Values.OfType<IdentityProvider>())
                 {
                     idp.AllowedRelyingParties = ((List<string>)idp.AllowedRelyingParties).AsReadOnly();
+                    idp.SecurityKeys = ((List<SecurityKey>)idp.SecurityKeys).AsReadOnly();
                 }
 
                 foreach (var party in options.RelyingParties.Values.OfType<RelyingParty>())

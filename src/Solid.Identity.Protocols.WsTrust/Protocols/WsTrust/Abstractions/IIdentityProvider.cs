@@ -9,7 +9,7 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
     {
         string Id { get; }
         string Name { get; }
-        SecurityKey SecurityKey { get;}
+        ICollection<SecurityKey> SecurityKeys { get;}
         bool RestrictRelyingParties { get; }
         ICollection<string> AllowedRelyingParties { get; }
         bool Enabled { get; }

@@ -20,6 +20,6 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public bool Enabled { get; set; } = true;
 
-        public SecurityKey SecurityKey { get; set; }
+        public ICollection<SecurityKey> SecurityKeys { get; internal set; } = new List<SecurityKey>();
     }
 }

@@ -97,7 +97,7 @@ namespace Solid.Identity.Protocols.WsTrust
             if (!(obj is IDictionary<string, IIdentityProvider> idps)) return defaults;
 
             if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return defaults;
-            return new[] { idp.SecurityKey }.Concat(defaults);
+            return idp.SecurityKeys.Concat(defaults);
         }
 
         protected virtual string ValidateIssuer(string issuer, SecurityToken token, TokenValidationParameters parameters)
