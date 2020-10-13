@@ -13,6 +13,7 @@ namespace Solid.Identity.Protocols.WsTrust
     public class WsTrustOptions
     {
         public string Issuer { get; set; }
+        public string Name { get; set; }
         public string DefaultAppliesTo { get; set; }
         public SecurityKey DefaultSigningKey { get; set; }
         public SigningAlgorithm DefaultSigningAlgorithm { get; set; } = SigningAlgorithm.RsaSha256;

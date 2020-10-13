@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 options.AddIdentityProvider(options.Issuer, idp =>
                 {
                     idp.RestrictRelyingParties = false;
-                    idp.Name = "Local authority";
+                    idp.Name = options.Name ?? "Local authority";
                 });
 
                 foreach (var idp in options.IdentityProviders.Values.OfType<IdentityProvider>())
