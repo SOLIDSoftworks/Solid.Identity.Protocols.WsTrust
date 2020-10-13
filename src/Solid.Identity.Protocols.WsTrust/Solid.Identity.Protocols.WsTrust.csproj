@@ -19,7 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Protocols.WsTrust" Version="6.7.2-preview-10803222715" />
-    <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.23-beta" />
+    <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.25-beta" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
