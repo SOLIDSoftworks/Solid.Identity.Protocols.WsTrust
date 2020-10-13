@@ -60,7 +60,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 ValidateIssuer = true,
 
                 ClockSkew = _options.MaxClockSkew,
-                IssuerSigningKeyResolver = ResolveIssuerSigningKeys,
+                IssuerSigningKeyResolver = CreateIssuerSigningKeyResolver(_options.Issuer),
                 TokenDecryptionKeyResolver = ResolveDecryptionKeys,
                 IssuerValidator = ValidateIssuer,
                 AudienceValidator = ValidateAudiences
@@ -75,6 +75,34 @@ namespace Solid.Identity.Protocols.WsTrust
             return parameters;
         }
 
+        protected virtual IssuerSigningKeyResolver CreateIssuerSigningKeyResolver(string localIssuer)
+        {
+            return (token, securityToken, kid, parameters) =>
+            {
+                _logger.LogDebug($"Finding issuer signing keys for '{securityToken?.Issuer}'.");
+
+                var defaults = new[] { _options.DefaultSigningKey };
+                var idp = parameters.GetIdentityProvider(securityToken?.Issuer);
+                if (idp?.Enabled != true) return defaults;
+
+                if (idp.Id == localIssuer)
+                {
+                    _logger.LogDebug($"Issuer is '{idp.Name}' ({idp.Id}). Getting all signing keys.");
+                    // TODO: Add a way to see the audience/appliesTo to get the correct signing key
+                    return parameters
+                        .GetRelyingParties()
+                        .Where(rp => rp.Enabled)
+                        .Where(rp => rp.SigningKey != null)
+                        .Select(rp => rp.SigningKey)
+                        .Concat(defaults)
+                        .ToArray()
+                    ;
+                }
+
+                return idp.SecurityKeys.Concat(defaults);
+            };
+        }
+
         protected virtual IEnumerable<SecurityKey> ResolveDecryptionKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)
         {
             _logger.LogDebug("Finding decryption keys.");
@@ -85,19 +113,6 @@ namespace Solid.Identity.Protocols.WsTrust
             if (!(obj is IDictionary<string, IRelyingParty> rps)) return defaults;
 
             return rps.Select(rp => rp.Value.EncryptingKey).Where(key => key != null).Concat(defaults);
-        }
-
-        protected virtual IEnumerable<SecurityKey> ResolveIssuerSigningKeys(string token, SecurityToken securityToken, string kid, TokenValidationParameters parameters)
-        {
-            _logger.LogDebug($"Finding issuer signing key for '{securityToken?.Issuer}'.");
-
-            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
-            var defaults = new[] { _options.DefaultSigningKey };
-            if (!properties.TryGetValue("idps", out var obj)) return defaults;
-            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return defaults;
-
-            if (!idps.TryGetValue(securityToken?.Issuer, out var idp)) return defaults;
-            return idp.SecurityKeys.Concat(defaults);
         }
 
         protected virtual string ValidateIssuer(string issuer, SecurityToken token, TokenValidationParameters parameters)
@@ -135,6 +150,47 @@ namespace Solid.Identity.Protocols.WsTrust
 
             var intersect = idp.AllowedRelyingParties.Intersect(audiences);
             return intersect.Any();
+        }
+    }
+
+    static class TokenValidationParamtersExtensions
+    {
+        public static IRelyingParty GetRelyingParty(this TokenValidationParameters parameters, string appliesTo)
+        {
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("rps", out var obj)) return null;
+            if (!(obj is IDictionary<string, IRelyingParty> rps)) return null;
+
+            if (!rps.TryGetValue(appliesTo, out var rp)) return null;
+            return rp;
+        }
+
+        public static IEnumerable<IRelyingParty> GetRelyingParties(this TokenValidationParameters parameters)
+        {
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("rps", out var obj)) return Enumerable.Empty<IRelyingParty>();
+            if (!(obj is IDictionary<string, IRelyingParty> rps)) return Enumerable.Empty<IRelyingParty>();
+
+            return rps.Values;
+        }
+
+        public static IIdentityProvider GetIdentityProvider(this TokenValidationParameters parameters, string issuer)
+        {
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("idps", out var obj)) return null;
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return null;
+
+            if (!idps.TryGetValue(issuer, out var idp)) return null;
+            return idp;
+        }
+
+        public static IEnumerable<IIdentityProvider> GetIdentityProviders(this TokenValidationParameters parameters)
+        {
+            var properties = parameters.PropertyBag ?? new Dictionary<string, object>();
+            if (!properties.TryGetValue("idps", out var obj)) return Enumerable.Empty<IIdentityProvider>();
+            if (!(obj is IDictionary<string, IIdentityProvider> idps)) return Enumerable.Empty<IIdentityProvider>();
+
+            return idps.Values;
         }
     }
 }
