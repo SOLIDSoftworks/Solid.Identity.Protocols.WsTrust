@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Solid.Identity.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -50,6 +51,8 @@ namespace Solid.Identity.Protocols.WsSecurity.Logging
             if (!logger.IsEnabled(LogLevel.Debug)) return;
 
             var type = handler.GetType();
+            if (handler is SecurityTokenHandlerWrapper wrapper)
+                type = wrapper.Inner.GetType();
             LogSecurityTokenHandlerTypeValidationAttempt(logger, type.FullName, null);
         };
 
@@ -58,6 +61,8 @@ namespace Solid.Identity.Protocols.WsSecurity.Logging
             if (!logger.IsEnabled(LogLevel.Information)) return;
 
             var type = handler.GetType();
+            if (handler is SecurityTokenHandlerWrapper wrapper)
+                type = wrapper.Inner.GetType();
             LogSuccessfulSecurityTokenHandlerTypeValidation(logger, type.FullName, null);
         };
 
@@ -66,6 +71,8 @@ namespace Solid.Identity.Protocols.WsSecurity.Logging
             if (!logger.IsEnabled(LogLevel.Warning)) return;
 
             var type = handler.GetType();
+            if (handler is SecurityTokenHandlerWrapper wrapper)
+                type = wrapper.Inner.GetType();
             LogFailedSecurityTokenHandlerTypeValidation(logger, type.FullName, exception);
         };
 
