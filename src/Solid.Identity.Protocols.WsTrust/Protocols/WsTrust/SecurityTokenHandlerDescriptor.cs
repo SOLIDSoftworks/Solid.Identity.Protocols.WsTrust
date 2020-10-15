@@ -14,5 +14,7 @@ namespace Solid.Identity.Protocols.WsTrust
         }
         public IEnumerable<string> TokenTypeIdentifiers { get; }
         public Func<IServiceProvider, SecurityTokenHandler> Factory { get; }
+
+        // TODO: add configurable delegates to get audience and embedded security key
     }
 }

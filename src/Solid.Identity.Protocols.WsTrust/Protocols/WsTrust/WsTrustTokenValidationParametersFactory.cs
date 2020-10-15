@@ -82,6 +82,13 @@ namespace Solid.Identity.Protocols.WsTrust
                 _logger.LogDebug($"Finding issuer signing keys for '{securityToken?.Issuer}'.");
 
                 var defaults = new[] { _options.DefaultSigningKey };
+                if(_options.UseEmbeddedCertificatesForValidation)
+                {
+                    if (securityToken is SamlSecurityToken saml)
+                        defaults = new[] { saml.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
+                    if (securityToken is Saml2SecurityToken saml2)
+                        defaults = new[] { saml2.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
+                }
                 var idp = parameters.GetIdentityProvider(securityToken?.Issuer);
                 if (idp?.Enabled != true) return defaults;
 
@@ -99,7 +106,7 @@ namespace Solid.Identity.Protocols.WsTrust
                     ;
                 }
 
-                return idp.SecurityKeys.Concat(defaults);
+                return idp.SecurityKeys.Concat(defaults).Where(k => k != null);
             };
         }
 
