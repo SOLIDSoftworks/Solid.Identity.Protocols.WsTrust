@@ -26,7 +26,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public TimeSpan MaxClockSkew { get; set; } = WsTrustDefaults.MaxClockSkew;
         public TimeSpan MaxTokenLifetime { get; set; } = WsTrustDefaults.MaxTokenLifetime;
         public bool UseEmbeddedCertificatesForValidation { get; set; } = false;
-               
+
         public WsTrustOptions AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
         {
             var party = new RelyingParty { AppliesTo = appliesTo };
@@ -54,31 +54,31 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public WsTrustOptions AddSupportedHashAlgorithm(string algorithm, Func<IServiceProvider, HashAlgorithm> factory)
         {
-            SupportedHashAlgorithms[algorithm] = new HashAlgorithmDescriptor(algorithm, (services, __) => factory(services));
+            SupportedHashAlgorithms[algorithm] = new HashAlgorithmDescriptor(algorithm, (services, _) => factory(services));
             return this;
         }
 
-        public WsTrustOptions AddSupportedSignatureAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, SignatureProvider> factory)
+        public WsTrustOptions AddSupportedSignatureAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, bool, SignatureProvider> factory)
         {
-            SupportedSignatureAlgorithms[algorithm] = new SignatureProviderDescriptor(algorithm, (services, args) => factory(services, args.FirstOrDefault() as SecurityKey));
+            SupportedSignatureAlgorithms[algorithm] = new SignatureProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey, (bool)args[1]));
             return this;
         }
 
-        public WsTrustOptions AddSupportedKeyWrapAlgorithm(string algorithm, Func<IServiceProvider, KeyWrapProvider> factory)
+        public WsTrustOptions AddSupportedKeyWrapAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, bool, KeyWrapProvider> factory)
         {
-            SupportedKeyWrapAlgorithms[algorithm] = new KeyWrapProviderDescriptor(algorithm, (services, args) => factory(services));
+            SupportedKeyWrapAlgorithms[algorithm] = new KeyWrapProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey, (bool)args[1]));
             return this;
         }
 
-        public WsTrustOptions AddSupportedKeyedHashAlgorithm(string algorithm, Func<IServiceProvider, KeyedHashAlgorithm> factory)
+        public WsTrustOptions AddSupportedKeyedHashAlgorithm(string algorithm, Func<IServiceProvider, byte[], KeyedHashAlgorithm> factory)
         {
-            SupportedKeyedHashAlgorithms[algorithm] = new KeyedHashAlgorithmDescriptor(algorithm, (services, args) => factory(services));
+            SupportedKeyedHashAlgorithms[algorithm] = new KeyedHashAlgorithmDescriptor(algorithm, (services, args) => factory(services, args[0] as byte[]));
             return this;
         }
 
-        public WsTrustOptions AddSupportedEncryptionAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, string, AuthenticatedEncryptionProvider> factory)
+        public WsTrustOptions AddSupportedEncryptionAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, AuthenticatedEncryptionProvider> factory)
         {
-            SupportedEncryptionAlgorithms[algorithm] = new AuthenticatedEncryptionProviderDescriptor(algorithm, (services, args) => factory(services, args.FirstOrDefault() as SecurityKey, args.ElementAtOrDefault(1) as string));
+            SupportedEncryptionAlgorithms[algorithm] = new AuthenticatedEncryptionProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey));
             return this;
         }
 
