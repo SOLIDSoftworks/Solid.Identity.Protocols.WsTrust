@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".repo", ".repo", "{A37ED134
 		..\LICENSE = ..\LICENSE
 		..\NuGet.Config = ..\NuGet.Config
 		..\README.md = ..\README.md
-		..\strongNameBypass.reg = ..\strongNameBypass.reg
-		..\strongNameBypass2.reg = ..\strongNameBypass2.reg
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".tests", ".tests", "{6654A9A8-AC22-459A-9ECF-8ED326FFC675}"

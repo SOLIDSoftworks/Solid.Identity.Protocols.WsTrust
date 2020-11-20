@@ -96,14 +96,22 @@ namespace Solid.Identity.Protocols.WsSecurity.Xml
                         //<o:SecurityTokenReference>
                         //  <o:Reference ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" URI="#uuid-2a7d35cf-97d9-4177-8b84-8a74f5dcd8a2-29"></o:Reference>
                         //</o:SecurityTokenReference>
-                        keyInfo.SecurityTokenReference = new WsSecurityTokenReference();
                         reader.ReadStartElement();
                         if (reader.IsStartElement("Reference", WsSecurityConstants.WsSecurity10.Namespace))
                         {
-                            keyInfo.SecurityTokenReference.Reference = new WsSecurityReference
+                            var uri = reader.GetAttribute(XmlSignatureConstants.Attributes.URI);
+                            keyInfo.SecurityTokenReference = new WsSecurityTokenReference(new KeyIdentifier(uri))
                             {
-                                ValueType = reader.GetAttribute("ValueType"),
-                                Uri = reader.GetAttribute(XmlSignatureConstants.Attributes.URI)
+                                Reference = new WsSecurityReference
+                                {
+                                    ValueType = reader.GetAttribute("ValueType"),
+                                    Uri = uri
+                                }
+                                //Reference = new WsSecurityReference()
+                                //{
+                                //    ValueType = reader.GetAttribute("ValueType"),
+                                //    Uri = uri
+                                //}
                             };
                             _ = reader.ReadOuterXml();
                         }

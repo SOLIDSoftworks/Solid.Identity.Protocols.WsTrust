@@ -7,6 +7,7 @@ using Solid.Identity.Tokens;
 using Solid.Identity.Protocols.WsSecurity.Tokens;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
 using System.Security.Cryptography;
+using Solid.IdentityModel.Tokens;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -16,9 +17,9 @@ namespace Solid.Identity.Protocols.WsTrust
         public string Name { get; set; }
         public string DefaultAppliesTo { get; set; }
         public SecurityKey DefaultSigningKey { get; set; }
-        public SigningAlgorithm DefaultSigningAlgorithm { get; set; } = SigningAlgorithm.RsaSha256;
+        public SignatureMethod DefaultSigningAlgorithm { get; set; } = SignatureMethod.RsaSha256;
         public SecurityKey DefaultEncryptionKey { get; set; }
-        public EncryptionAlgorithm DefaultEncryptionAlgorithm { get; set; } = EncryptionAlgorithm.Aes128;
+        public EncryptionMethod DefaultEncryptionAlgorithm { get; set; } = EncryptionMethod.Aes128CbcWithRsaOaepKeyWrap;
         public TimeSpan DefaultTokenLifetime { get; set; } = WsTrustDefaults.DefaultTokenLifetime;
         public int DefaultSymmetricKeySizeInBits { get; set; } = WsTrustDefaults.DefaultSymmetricKeySizeInBits;
         public int DefaultMaxSymmetricKeySizeInBits { get; set; } = WsTrustDefaults.DefaultMaxSymmetricKeySizeInBits;

@@ -8,6 +8,11 @@ namespace Solid.Identity.Protocols.WsSecurity.Xml
 {
     class WsSecurityTokenReference : SecurityTokenReference
     {
+        public WsSecurityTokenReference(KeyIdentifier keyIdentifier) 
+            : base(keyIdentifier)
+        {
+        }
+
         public Reference Reference { get; set; }
     }
 }

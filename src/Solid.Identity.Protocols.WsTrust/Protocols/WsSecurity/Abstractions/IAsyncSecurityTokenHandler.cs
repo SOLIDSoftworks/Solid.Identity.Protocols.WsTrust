@@ -12,7 +12,6 @@ namespace Solid.Identity.Protocols.WsSecurity.Abstractions
     {
         ValueTask<bool> CanReadTokenAsync(XmlReader reader);
         ValueTask<bool> CanReadTokenAsync(string tokenString);
-        ValueTask<bool> CanWriteSecurityTokenAsync(SecurityToken securityToken);
         ValueTask<SecurityKeyIdentifierClause> CreateSecurityTokenReferenceAsync(SecurityToken token, bool attached);
         ValueTask<SecurityToken> CreateTokenAsync(SecurityTokenDescriptor tokenDescriptor);
         ValueTask<SecurityToken> ReadTokenAsync(string securityToken);

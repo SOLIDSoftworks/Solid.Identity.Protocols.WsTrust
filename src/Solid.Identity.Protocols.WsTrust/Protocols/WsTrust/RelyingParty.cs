@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens.Saml2;
 using Solid.Identity.Protocols.WsTrust.Abstractions;
 using Solid.Identity.Tokens;
+using Solid.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,9 +21,9 @@ namespace Solid.Identity.Protocols.WsTrust
         public string ExpectedIssuer { get; set; }
         public string ReplyTo { get; set; }
         public SecurityKey SigningKey { get; set; }
-        public SigningAlgorithm SigningAlgorithm { get; set; }
+        public SignatureMethod SigningAlgorithm { get; set; }
         public SecurityKey EncryptingKey { get; set; }
-        public EncryptionAlgorithm EncryptingAlgorithm { get; set; }
+        public EncryptionMethod EncryptingAlgorithm { get; set; }
         public bool RequiresEncryptedToken { get; set; } = false;
         public bool RequiresEncryptedSymmetricKeys { get; set; } = false;
         public string Name { get; set; }

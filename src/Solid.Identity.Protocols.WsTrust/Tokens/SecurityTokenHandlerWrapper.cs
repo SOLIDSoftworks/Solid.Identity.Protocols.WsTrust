@@ -27,11 +27,11 @@ namespace Solid.Identity.Tokens
 
         public override bool CanReadToken(string tokenString) => Inner.CanReadToken(tokenString);
         
-        public override bool CanWriteSecurityToken(SecurityToken securityToken)
-        {
-            if (Inner.CanWriteSecurityToken(securityToken)) return true;
-            return base.CanWriteSecurityToken(securityToken);
-        }
+        //public override bool CanWriteSecurityToken(SecurityToken securityToken)
+        //{
+        //    if (Inner.CanWriteSecurityToken(securityToken)) return true;
+        //    return base.CanWriteSecurityToken(securityToken);
+        //}
 
         public override SecurityKeyIdentifierClause CreateSecurityTokenReference(SecurityToken token, bool attached)
         {
@@ -64,7 +64,7 @@ namespace Solid.Identity.Tokens
 
         public override string ToString() => Inner.ToString();
 
-        public override bool TryWriteSourceData(XmlWriter writer, SecurityToken securityToken) => Inner.TryWriteSourceData(writer, securityToken);
+        //public override bool TryWriteSourceData(XmlWriter writer, SecurityToken securityToken) => Inner.TryWriteSourceData(writer, securityToken);
 
         public override ClaimsPrincipal ValidateToken(string securityToken, TokenValidationParameters validationParameters, out SecurityToken validatedToken) => Inner.ValidateToken(securityToken, validationParameters, out validatedToken);
 

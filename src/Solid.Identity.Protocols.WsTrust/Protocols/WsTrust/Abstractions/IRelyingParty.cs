@@ -1,5 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using Solid.Identity.Tokens;
+using Solid.IdentityModel.Tokens;
+using Solid.IdentityModel.Tokens.Crypto;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -15,9 +17,9 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         string AppliesTo { get; }
         string ReplyTo { get; }
         SecurityKey SigningKey { get; }
-        SigningAlgorithm SigningAlgorithm { get; }
+        SignatureMethod SigningAlgorithm { get; }
         SecurityKey EncryptingKey { get; }
-        EncryptionAlgorithm EncryptingAlgorithm { get; }
+        EncryptionMethod EncryptingAlgorithm { get; }
         bool RequiresEncryptedToken { get; }
         bool RequiresEncryptedSymmetricKeys { get; }
         string Name { get; }

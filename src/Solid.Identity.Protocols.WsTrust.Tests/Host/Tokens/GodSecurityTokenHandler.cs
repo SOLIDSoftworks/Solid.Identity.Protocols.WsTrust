@@ -74,7 +74,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
             }
         }
 
-        public override bool CanWriteSecurityToken(SecurityToken securityToken) => securityToken is GodSecurityToken;
+        //public override bool CanWriteSecurityToken(SecurityToken securityToken) => securityToken is GodSecurityToken;
 
         public override SecurityToken ReadToken(XmlReader reader, TokenValidationParameters _) => ReadToken(reader);
         

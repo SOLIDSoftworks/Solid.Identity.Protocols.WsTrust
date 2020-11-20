@@ -233,7 +233,6 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
                 try
                 {
-
                     if (handler is IAsyncSecurityTokenHandler asyncHandler)
                     {
                         var result = await asyncHandler.ValidateTokenAsync(reader, parameters);

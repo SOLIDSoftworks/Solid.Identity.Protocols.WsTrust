@@ -14,6 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Solid.Identity.Tokens;
+using Solid.IdentityModel.Tokens;
 
 namespace Solid.Identity.Protocols.WsTrust.Tests.Host
 {
@@ -67,7 +68,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                             var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));
                             party.Name = "My test relying party";
                             party.SigningKey = new X509SecurityKey(certificate);
-                            party.SigningAlgorithm = SigningAlgorithm.RsaSha256;
+                            party.SigningAlgorithm = SignatureMethod.RsaSha256;
                             party.DefaultTokenType = Saml2Constants.Saml2TokenProfile11;
                         });
                     })

@@ -99,7 +99,7 @@ namespace Solid.Identity.Protocols.WsTrust
             descriptor.Subject = await CreateOutgoingSubjectAsync(request, scope, cancellationToken);
 
             var token = await CreateSecurityTokenAsync(scope, request, descriptor, handler, cancellationToken);
-            descriptor.Token = token;
+            descriptor.TokenElement = token.ConvertToXmlElement(handler);
 
             return await CreateResponseAsync(request, descriptor, cancellationToken);
         }
@@ -184,29 +184,24 @@ namespace Solid.Identity.Protocols.WsTrust
         protected virtual ValueTask<SigningCredentials> CreateSigningCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
             var key = party.SigningKey;
-            var algorithm = party.SigningAlgorithm ?? Options.DefaultSigningAlgorithm;
+            var method = party.SigningAlgorithm ?? Options.DefaultSigningAlgorithm;
 
             if (key == null)
             {
                 key = Options.DefaultSigningKey;
-                algorithm = Options.DefaultSigningAlgorithm;
+                method = Options.DefaultSigningAlgorithm;
             }
 
             if (key == null) return new ValueTask<SigningCredentials>();
 
-            var credentials = null as SigningCredentials;
-            if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
-            if (algorithm.Algorithm == null) throw new ArgumentNullException(nameof(algorithm.Algorithm));
-
-            if (string.IsNullOrEmpty(algorithm.Digest)) credentials = new SigningCredentials(key, algorithm.Algorithm);
-            else credentials = new SigningCredentials(key, algorithm.Algorithm, algorithm.Digest);
+            var credentials = method.CreateCredentials(key);
 
             var information = new SigningCredentialsInformation
             {
                 SecurityKeyName = (key is X509SecurityKey x509) ? x509.Certificate.Subject : key.KeyId,
                 SecurityKeyType = key.GetType().Name,
-                Algorithm = algorithm.Algorithm,
-                Digest = algorithm.Digest
+                Algorithm = method.SignatureAlgortihm,
+                Digest = method.DigestAlgorithm
             };
             WsTrustLogMessages.SigningCredentialsCreated(Logger, information, null);
 
@@ -218,35 +213,26 @@ namespace Solid.Identity.Protocols.WsTrust
             if (!party.RequiresEncryptedToken && !party.RequiresEncryptedSymmetricKeys) return new ValueTask<EncryptingCredentials>();
 
             var key = party.EncryptingKey;
-            var algorithm = party.EncryptingAlgorithm ?? Options.DefaultEncryptionAlgorithm;
+            var method = party.EncryptingAlgorithm ?? Options.DefaultEncryptionAlgorithm;
 
             if (key == null)
             {
                 key = Options.DefaultSigningKey;
-                algorithm = Options.DefaultEncryptionAlgorithm;
+                method = Options.DefaultEncryptionAlgorithm;
             }
 
             if (key == null) return new ValueTask<EncryptingCredentials>();
 
-            var credentials = null as EncryptingCredentials;
-            if (algorithm == null) throw new ArgumentNullException(nameof(algorithm));
-            if (algorithm.DataEncryptionAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.DataEncryptionAlgorithm));
+            var credentials = method.CreateCredentials(key);
 
-            if (key is SymmetricSecurityKey symmetric) credentials = new EncryptingCredentials(symmetric, algorithm.DataEncryptionAlgorithm);
-            else if (algorithm.KeyWrapAlgorithm == null) throw new ArgumentNullException(nameof(algorithm.KeyWrapAlgorithm));
-            else credentials = new EncryptingCredentials(key, algorithm.KeyWrapAlgorithm, algorithm.DataEncryptionAlgorithm);
-
-            if(credentials != null)
+            var information = new EncryptingCredentialsInformation
             {
-                var information = new EncryptingCredentialsInformation
-                {
-                    SecurityKeyName = (key is X509SecurityKey x509) ? x509.Certificate.Subject : key.KeyId,
-                    SecurityKeyType = key.GetType().Name,
-                    DataEncryptionAlgorithm = algorithm.DataEncryptionAlgorithm,
-                    KeyWrapAlgorithm = algorithm.KeyWrapAlgorithm
-                };
-                WsTrustLogMessages.EncryptingCredentialsCreated(Logger, information, null);
-            }
+                SecurityKeyName = (key is X509SecurityKey x509) ? x509.Certificate.Subject : key.KeyId,
+                SecurityKeyType = key.GetType().Name,
+                DataEncryptionAlgorithm = method.EncryptionAlgorithm,
+                KeyWrapAlgorithm = method.KeyWrapAlgorithm
+            };
+            WsTrustLogMessages.EncryptingCredentialsCreated(Logger, information, null);
 
             return new ValueTask<EncryptingCredentials>(credentials);
         }
@@ -266,7 +252,7 @@ namespace Solid.Identity.Protocols.WsTrust
             var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
             var appliesTo = request.AppliesTo.EndpointReference.Uri;
             if (party.ValidateRequestedTokenType && !party.SupportedTokenTypes.Contains(request.TokenType))
-                throw new SecurityException($"Identity provider ({issuer}) attempting to request unsupported token type for: {appliesTo}");
+                throw new SecurityException($"Identity provider ({issuer}) attempting to request a token type the relying party ({appliesTo}) doesn't support: {request.TokenType}");
 
             if (!await party.AuthorizeAsync(Services, principal))
                 throw new SecurityException($"User is not authorized to be issued a token for {party.AppliesTo}");
