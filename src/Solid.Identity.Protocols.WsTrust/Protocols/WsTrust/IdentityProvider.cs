@@ -21,5 +21,7 @@ namespace Solid.Identity.Protocols.WsTrust
         public bool Enabled { get; set; } = true;
 
         public ICollection<SecurityKey> SecurityKeys { get; internal set; } = new List<SecurityKey>();
+
+        public ICollection<string> ValidEmbeddedCertificateSubjectNames { get; internal set; } = new List<string>();
     }
 }
