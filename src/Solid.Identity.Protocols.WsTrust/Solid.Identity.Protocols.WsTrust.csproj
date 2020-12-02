@@ -24,7 +24,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Protocols.WsTrust" Version="6.8.0" />
     <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.25-beta" />
-    <PackageReference Include="Solid.IdentityModel.Tokens.Saml" Version="0.1.8-beta" />
+    <PackageReference Include="Solid.IdentityModel.Tokens.Saml" Version="0.1.9-beta" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>
