@@ -79,7 +79,19 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             return (token, securityToken, kid, parameters) =>
             {
-                _logger.LogDebug($"Finding issuer signing keys for '{securityToken?.Issuer}'.");
+                _logger.LogInformation($"Finding issuer signing keys for '{securityToken?.Issuer}'.");
+
+                var idp = parameters.GetIdentityProvider(securityToken?.Issuer);
+                if (idp == null)
+                {
+                    _logger.LogWarning($"Issuer '{securityToken?.Issuer}' not found.");
+                    return Enumerable.Empty<SecurityKey>();
+                }
+                if (!idp.Enabled)
+                {
+                    _logger.LogWarning($"Issuer '{securityToken?.Issuer}' is disabled.");
+                    return Enumerable.Empty<SecurityKey>();
+                }
 
                 var defaults = new[] { _options.DefaultSigningKey };
                 if(_options.UseEmbeddedCertificatesForValidation)
@@ -89,12 +101,10 @@ namespace Solid.Identity.Protocols.WsTrust
                     if (securityToken is Saml2SecurityToken saml2)
                         defaults = new[] { saml2.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
                 }
-                var idp = parameters.GetIdentityProvider(securityToken?.Issuer);
-                if (idp?.Enabled != true) return defaults;
 
                 if (idp.Id == localIssuer)
                 {
-                    _logger.LogDebug($"Issuer is '{idp.Name}' ({idp.Id}). Getting all signing keys.");
+                    _logger.LogInformation($"Issuer is '{idp.Name}' ({idp.Id}). Getting all signing keys.");
                     // TODO: Add a way to see the audience/appliesTo to get the correct signing key
                     return parameters
                         .GetRelyingParties()
