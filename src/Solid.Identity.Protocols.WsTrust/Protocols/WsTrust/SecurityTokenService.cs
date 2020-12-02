@@ -99,6 +99,7 @@ namespace Solid.Identity.Protocols.WsTrust
             descriptor.Subject = await CreateOutgoingSubjectAsync(request, scope, cancellationToken);
 
             var token = await CreateSecurityTokenAsync(scope, request, descriptor, handler, cancellationToken);
+            descriptor.Token = token;
             descriptor.TokenElement = token.ConvertToXmlElement(handler);
 
             return await CreateResponseAsync(request, descriptor, cancellationToken);
@@ -144,7 +145,6 @@ namespace Solid.Identity.Protocols.WsTrust
         }
 
         private IDictionary<string, IRelyingParty> _cache = new Dictionary<string, IRelyingParty>();
-
         protected virtual async ValueTask<IRelyingParty> GetRelyingPartyAsync(AppliesTo appliesTo, CancellationToken cancellationToken)
         {
             if (appliesTo == null) return null;

@@ -26,7 +26,6 @@ namespace Solid.Identity.Protocols.WsTrust
         public string DefaultTokenType { get; set; } = WsTrustDefaults.DefaultTokenType;
         public TimeSpan MaxClockSkew { get; set; } = WsTrustDefaults.MaxClockSkew;
         public TimeSpan MaxTokenLifetime { get; set; } = WsTrustDefaults.MaxTokenLifetime;
-        public bool UseEmbeddedCertificatesForValidation { get; set; } = false;
 
         public WsTrustOptions AddRelyingParty(string appliesTo, Action<RelyingParty> configureRelyingParty)
         {

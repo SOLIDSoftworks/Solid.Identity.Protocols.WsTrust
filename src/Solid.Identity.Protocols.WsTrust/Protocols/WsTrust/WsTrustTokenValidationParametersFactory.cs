@@ -60,6 +60,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 ValidateIssuer = true,
 
                 ClockSkew = _options.MaxClockSkew,
+                IssuerSigningKeyValidator = CreateIssuerSigningKeyValidator(_options.Issuer),
                 IssuerSigningKeyResolver = CreateIssuerSigningKeyResolver(_options.Issuer),
                 TokenDecryptionKeyResolver = ResolveDecryptionKeys,
                 IssuerValidator = ValidateIssuer,
@@ -94,7 +95,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 }
 
                 var defaults = new[] { _options.DefaultSigningKey };
-                if(_options.UseEmbeddedCertificatesForValidation)
+                if(idp.ValidEmbeddedCertificateSubjectNames.Any())
                 {
                     if (securityToken is SamlSecurityToken saml)
                         defaults = new[] { saml.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
@@ -117,6 +118,36 @@ namespace Solid.Identity.Protocols.WsTrust
                 }
 
                 return idp.SecurityKeys.Concat(defaults).Where(k => k != null);
+            };
+        }
+        protected virtual IssuerSigningKeyValidator CreateIssuerSigningKeyValidator(string localIssuer)
+        {
+            return (key, token, parameters) =>
+            {
+                if (token?.Issuer == localIssuer) return true;
+                _logger.LogInformation($"Validating issuer signing key '{key?.KeyId}' for issuer '{token?.Issuer}'.");
+
+                var idp = parameters.GetIdentityProvider(token?.Issuer);
+
+                if (idp.SecurityKeys.Contains(key))
+                {
+                    _logger.LogDebug($"Signing key '{key?.KeyId}' is stored in-memory for issuer '{token?.Issuer}'.");
+                    return true;
+                }
+                if (key is X509SecurityKey x509)
+                {
+                    var certificate = x509.Certificate;
+                    foreach (var subject in idp.ValidEmbeddedCertificateSubjectNames)
+                    {
+                        if (certificate.Subject == subject)
+                        {
+                            _logger.LogDebug($"Embedded signing key '{key?.KeyId}' has a valid subject name ({subject}) for issuer '{token?.Issuer}'.");
+                            return true;
+                        }
+                    }
+                }
+                _logger.LogDebug($"Signing key '{key?.KeyId}' is not valid for issuer '{token?.Issuer}'.");
+                return false;
             };
         }
 

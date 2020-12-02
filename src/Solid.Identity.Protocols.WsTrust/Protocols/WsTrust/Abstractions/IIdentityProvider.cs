@@ -13,5 +13,6 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         bool RestrictRelyingParties { get; }
         ICollection<string> AllowedRelyingParties { get; }
         bool Enabled { get; }
+        ICollection<string> ValidEmbeddedCertificateSubjectNames { get; }
     }
 }
