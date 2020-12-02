@@ -22,6 +22,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public ICollection<SecurityKey> SecurityKeys { get; internal set; } = new List<SecurityKey>();
 
-        public ICollection<string> ValidEmbeddedCertificateSubjectNames { get; internal set; } = new List<string>();
+        public ICollection<X509Name> ValidEmbeddedCertificateSubjectNames { get; internal set; } = new List<X509Name>();
+
+        public ICollection<X509Name> ValidEmbeddedCertificateIssuerNames { get; internal set; } = new List<X509Name>();
     }
 }

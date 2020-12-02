@@ -134,16 +134,17 @@ namespace Solid.Identity.Protocols.WsTrust
                     _logger.LogDebug($"Signing key '{key?.KeyId}' is stored in-memory for issuer '{token?.Issuer}'.");
                     return true;
                 }
-                if (key is X509SecurityKey x509)
+                if ((idp.ValidEmbeddedCertificateIssuerNames.Any() || idp.ValidEmbeddedCertificateSubjectNames.Any()) && key is X509SecurityKey x509)
                 {
                     var certificate = x509.Certificate;
-                    foreach (var subject in idp.ValidEmbeddedCertificateSubjectNames)
+                    var validIssuers = idp.ValidEmbeddedCertificateIssuerNames;
+                    var validSubjects = idp.ValidEmbeddedCertificateSubjectNames;
+
+                    if ((!validIssuers.Any() || validIssuers.Any(issuer => certificate.HasIssuer(issuer)) &&
+                        (!validSubjects.Any() || validSubjects.Any(subject => certificate.HasSubject(subject)))))
                     {
-                        if (certificate.Subject == subject)
-                        {
-                            _logger.LogDebug($"Embedded signing key '{key?.KeyId}' has a valid subject name ({subject}) for issuer '{token?.Issuer}'.");
-                            return true;
-                        }
+                        _logger.LogDebug($"Embedded signing key '{key?.KeyId}' has a valid subject DN ({certificate.Subject}) and/or issuer DN ({certificate.Issuer}) for issuer '{token?.Issuer}'.");
+                        return true;
                     }
                 }
                 _logger.LogDebug($"Signing key '{key?.KeyId}' is not valid for issuer '{token?.Issuer}'.");
