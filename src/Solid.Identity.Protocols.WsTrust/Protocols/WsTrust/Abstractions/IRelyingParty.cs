@@ -23,7 +23,7 @@ namespace Solid.Identity.Protocols.WsTrust.Abstractions
         bool RequiresEncryptedToken { get; }
         bool RequiresEncryptedSymmetricKeys { get; }
         string Name { get; }
-        TimeSpan? TokenLifeTime { get; }
+        TimeSpan? TokenLifetime { get; }
         TimeSpan? ClockSkew { get; }
         string DefaultTokenType { get; }
         bool ValidateRequestedTokenType { get; }

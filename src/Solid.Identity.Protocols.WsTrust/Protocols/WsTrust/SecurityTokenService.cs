@@ -342,7 +342,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// Gets the lifetime of the issued token.
         /// Normally called with the lifetime that arrived in the RST.  
         /// The algorithm for calculating the token lifetime is:
-        /// requestLifeTime (in)            LifeTime (returned)
+        /// requestLifetime (in)            Lifetime (returned)
         /// Created     Expires             Created             Expires
         /// null        null                DateTime.UtcNow     DateTime.UtcNow + SecurityTokenServiceConfiguration.DefaultTokenLifetime
         /// C           null                C                   C + SecurityTokenServiceConfiguration.DefaultTokenLifetime
@@ -356,7 +356,7 @@ namespace Solid.Identity.Protocols.WsTrust
             DateTime expires;
 
             var now = SystemClock.UtcNow.UtcDateTime;
-            var lifetime = scope.RelyingParty.TokenLifeTime ?? Options.DefaultTokenLifetime; 
+            var lifetime = scope.RelyingParty.TokenLifetime ?? Options.DefaultTokenLifetime; 
 
             if (requestLifetime == null)
             {
