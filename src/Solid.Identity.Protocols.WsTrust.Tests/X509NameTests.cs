@@ -59,6 +59,22 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         }
 
         [Theory]
+        [InlineData("CN=person1, OU=dept1 O=org1")]
+        [InlineData("CN=person1, OU=\"dept1 O=org1\"")]
+        public void ShouldParseInvalidStringDn(string dn)
+        {
+            var name = new X509Name(dn);
+
+            Assert.NotEmpty(name.Attributes);
+
+            Assert.Contains("CN", name.Attributes);
+            Assert.Equal("person1", name.Attributes["CN"].Single());
+            Assert.Contains("OU", name.Attributes);
+            Assert.Equal("dept1 O=org1", name.Attributes["OU"].Single());
+            Assert.DoesNotContain("O", name.Attributes);
+        }
+
+        [Theory]
         [InlineData("CN=person1, OU=dept1, O=org1", true)]
         public void ShouldTryParseStringDn(string dn, bool success)
         {

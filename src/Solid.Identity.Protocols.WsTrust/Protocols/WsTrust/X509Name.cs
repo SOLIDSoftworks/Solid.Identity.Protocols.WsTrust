@@ -87,7 +87,7 @@ namespace Solid.Identity.Protocols.WsTrust
                     list = new List<string>();
                     attributes.Add(key, list);
                 }
-                list.Add(value);
+                list.Add(value.Trim('"'));
             }
             return attributes.ToDictionary(p => p.Key, p => p.Value.AsEnumerable());
         }

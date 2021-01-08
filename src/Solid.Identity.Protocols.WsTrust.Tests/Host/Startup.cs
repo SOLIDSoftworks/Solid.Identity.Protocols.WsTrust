@@ -63,6 +63,11 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                                 idp.SecurityKeys.Add(new X509SecurityKey(publicCertificate));
                             }
                         });
+                        options.AddIdentityProvider("urn:test:issuer:embedded_cert", idp =>
+                        {
+                            idp.AllowedRelyingParties.Add("urn:tests");
+                            idp.ValidEmbeddedCertificateSubjectNames.Add(X509Name.Parse("CN=wstrust.tests.client"));
+                        });
                         options.AddRelyingParty("urn:tests", party =>
                         {
                             var certificate = new X509Certificate2(Convert.FromBase64String(Certificates.RelyingPartyValidBase64));

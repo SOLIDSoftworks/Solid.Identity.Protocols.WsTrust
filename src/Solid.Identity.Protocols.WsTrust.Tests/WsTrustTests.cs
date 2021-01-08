@@ -28,7 +28,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         }
 
         [Fact]
-        public void ShouldValidateIsserAsAudience()
+        public void ShouldValidateIssuerAsAudience()
         {
             var request = new RequestSecurityToken
             {
@@ -71,6 +71,23 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 AppliesTo = new EndpointReference("urn:tests")
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", clientTokenType: clientTokenType);
+            var token = client.Issue(request, out _);
+
+            Assert.NotNull(token);
+        }
+
+        [Theory]
+        [InlineData(WsTrustTestsFixture.SamlTokenType)]
+        [InlineData(WsTrustTestsFixture.Saml2TokenType)]
+        public void ShouldValidateTokenWithEmbeddedCertificate(string clientTokenType)
+        {
+            var request = new RequestSecurityToken
+            {
+                RequestType = RequestTypes.Issue,
+                KeyType = KeyTypes.Bearer,
+                AppliesTo = new EndpointReference("urn:tests")
+            };
+            var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", issuer: "urn:test:issuer:embedded_cert", clientTokenType: clientTokenType);
             var token = client.Issue(request, out _);
 
             Assert.NotNull(token);

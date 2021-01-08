@@ -58,6 +58,7 @@ namespace Solid.Identity.Protocols.WsTrust
                 ValidIssuers = idps.Keys,
                 ValidateAudience = true,
                 ValidateIssuer = true,
+                ValidateIssuerSigningKey = true,
 
                 ClockSkew = _options.MaxClockSkew,
                 IssuerSigningKeyValidator = CreateIssuerSigningKeyValidator(_options.Issuer),
@@ -98,9 +99,15 @@ namespace Solid.Identity.Protocols.WsTrust
                 if(idp.ValidEmbeddedCertificateSubjectNames.Any())
                 {
                     if (securityToken is SamlSecurityToken saml)
-                        defaults = new[] { saml.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
+                    {
+                        _logger.LogDebug("Adding embedded security key from SAML security token.");
+                        defaults = saml.GetEmbeddedSecurityKeys().Concat(defaults).ToArray();
+                    }
                     if (securityToken is Saml2SecurityToken saml2)
-                        defaults = new[] { saml2.GetEmbeddedSecurityKey() }.Concat(defaults).ToArray();
+                    {
+                        _logger.LogDebug("Adding embedded security key from SAML2 security token.");
+                        defaults = saml2.GetEmbeddedSecurityKeys().Concat(defaults).ToArray();
+                    }
                 }
 
                 if (idp.Id == localIssuer)
