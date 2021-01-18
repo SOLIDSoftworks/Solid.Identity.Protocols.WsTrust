@@ -80,7 +80,10 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                         if (reader.IsWsSecurityTimestamp())
                             HandleTimestamp(reader, soap);
                         else if (reader.IsXmlSignature())
-                        {                            
+                        {
+                            if (signature != null)
+                                throw new SecurityException("Multiple signatures found in WS-Security header.");
+
                             signature = ReadSignature(reader, soap);
                         }
                         else if (reader.IsStartElement())
