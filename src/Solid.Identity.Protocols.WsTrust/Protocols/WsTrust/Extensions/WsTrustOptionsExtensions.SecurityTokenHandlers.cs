@@ -1,11 +1,12 @@
 ﻿using Microsoft.IdentityModel.Tokens.Saml;
 using Microsoft.IdentityModel.Tokens.Saml2;
+using Solid.Identity.Protocols.WsTrust;
 using Solid.IdentityModel.Tokens.Saml2;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Solid.Identity.Protocols.WsTrust
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class WsTrustOptionsExtensions_SecurityTokenHandlers
     {

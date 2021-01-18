@@ -2,12 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Solid.Identity.Protocols.WsSecurity.Tokens;
+using Solid.Identity.Protocols.WsTrust;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Solid.Identity.Protocols.WsTrust
+namespace Microsoft.Extensions.DependencyInjection
 {
     public static class WsTrustOptionsExtensions_Algorithms
     {
