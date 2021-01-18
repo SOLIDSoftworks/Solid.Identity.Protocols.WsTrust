@@ -34,11 +34,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
         private ISoapContextAccessor _soapContextAccessor;
         private ITokenValidationParametersFactory _tokenValidationParametersFactory;
         private SecurityTokenHandlerProvider _securityTokenHandlerProvider;
-        private WsTrustOptions _wsTrust;
 
         public WsSecurityAuthenticationHandler(
             ISoapContextAccessor soapContextAccessor,
-            IOptionsMonitor<WsTrustOptions> wsTrustOptionsMonitor,
             IServiceProvider services,
             ITokenValidationParametersFactory tokenValidationParametersFactory,
             SecurityTokenHandlerProvider securityTokenHandlerProvider,
@@ -50,8 +48,6 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
             : base(options, logger, encoder, clock)
         {
             _soapContextAccessor = soapContextAccessor;
-            _wsTrust = wsTrustOptionsMonitor.CurrentValue;
-            _ = wsTrustOptionsMonitor.OnChange((o, _) => _wsTrust = o);
             _tokenValidationParametersFactory = tokenValidationParametersFactory;
             _securityTokenHandlerProvider = securityTokenHandlerProvider;
         }
