@@ -62,7 +62,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
             try
             {
-                var results = new List<(ClaimsPrincipal User, SecurityToken Token)>();
+                var results = new List<VerifyTokenResult>();
 
                 var reader = soap.Request.Headers.GetReaderAtHeader(index);
                 //if (_wsTrust.ValidateWsSecuritySignatures)
@@ -99,7 +99,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                     {
                         var uri = signature.KeyInfo.GetSecurityTokenReference()?.Reference.Uri;
                         var key = results
-                            .Select(r => r.Token)
+                            .Select(r => r.SecurityToken)
                             .FirstOrDefault(t => $"#{t.Id}" == uri)
                         ;
                         if (key == null)
@@ -117,9 +117,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                 {
                     IsPersistent = false
                 };
-                properties.Parameters.Add(nameof(SecurityToken), result.Token);
+                properties.Parameters.Add(nameof(SecurityToken), result.SecurityToken);
 
-                AddIssuerClaim(result.User, result.Token);
+                AddIssuerClaim(result.User, result.SecurityToken);
 
                 return AuthenticateResult.Success(new AuthenticationTicket(result.User, properties, Scheme.Name));
             }
@@ -140,59 +140,39 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
         {
             WsSecurityLogMessages.LogSignatureElement(Logger, ref reader);
 
-            var buffer = soap.Request.CreateBufferedCopy((int)(soap.HttpContext.Request.ContentLength ?? 64 * 1024));
-            var message = buffer.CreateMessage();
-            using(var stream = new MemoryStream())
+            using var buffer = soap.Request.CreateBufferedCopy((int)(soap.HttpContext.Request.ContentLength ?? 64 * 1024));
+            using var message = buffer.CreateMessage();
+            using var stream = new MemoryStream();
+           
+            using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
+                message.WriteMessage(writer);
+            stream.Position = 0;
+            using (var document = XmlReader.Create(stream))
             {
-                using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
-                    message.WriteMessage(writer);
-                stream.Position = 0;
-                using (var document = XmlReader.Create(stream))
-                {
-                    var serializer = new WsUtilityDSigSerializer(document);
-                    var signature = serializer.ReadSignature(reader);
-                    soap.Request = buffer.CreateMessage();
-                    return signature;
-                }
-            }
-
-        }
-
-        //private void AssertTimestamp(Timestamp timestamp)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //private Timestamp ReadTimestamp(EnvelopedSignatureReader reader)
-        //{
-        //    var timestamp = new Timestamp();
-        //    timestamp.Id = reader.GetAttribute("Id", WsUtilityConstants.WsUtility10.Namespace);
-        //    reader.ReadToDescendant("Created", WsUtilityConstants.WsUtility10.Namespace);
-        //    timestamp.Created = reader.ReadElementContentAsDateTime();
-        //    reader.ReadToFollowing("Expires", WsUtilityConstants.WsUtility10.Namespace);
-        //    timestamp.Expires = reader.ReadElementContentAsDateTime();
-
-        //    reader.MoveToElement();
-        //    return timestamp;
-        //}
-
-        private void ValidateSignatures(SoapContext context, IEnumerable<SecurityToken> tokens)
-        {
-            var buffer = context.Request.CreateBufferedCopy((int)(context.HttpContext.Request.ContentLength ?? 64 * 1024));
-            var request = buffer.CreateMessage();
-            context.Request = buffer.CreateMessage();
-
-            using (var stream = new MemoryStream())
-            {
-                using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
-                    request.WriteMessage(writer);
-
-                stream.Position = 0;
-
-                using (var reader = new EnvelopedSignatureReader(XmlReader.Create(stream)))
-                    _ = reader.ReadOuterXml();
+                var serializer = new WsUtilityDSigSerializer(document);
+                var signature = serializer.ReadSignature(reader);
+                soap.Request = buffer.CreateMessage();
+                return signature;
             }
         }
+
+        //private void ValidateSignatures(SoapContext context, IEnumerable<SecurityToken> tokens)
+        //{
+        //    using var buffer = context.Request.CreateBufferedCopy((int)(context.HttpContext.Request.ContentLength ?? 64 * 1024));
+        //    using var request = buffer.CreateMessage();
+
+        //    using var stream = new MemoryStream();
+            
+        //    using (var writer = XmlWriter.Create(stream, new XmlWriterSettings { CloseOutput = false }))
+        //        request.WriteMessage(writer);
+
+        //    stream.Position = 0;
+
+        //    using (var reader = new EnvelopedSignatureReader(XmlReader.Create(stream)))
+        //        _ = reader.ReadOuterXml();
+            
+        //    context.Request = buffer.CreateMessage();
+        //}
 
         //private AsymmetricAlgorithm GetPublicKey(SoapContext context, KeyInfo keyInfo, IEnumerable<SecurityToken> tokens)
         //{
@@ -216,7 +196,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
         //    return null;
         //}
 
-        private async ValueTask<(ClaimsPrincipal User, SecurityToken Token)> VerifyTokenAsync(XmlReader reader, SoapContext soap)
+        private async ValueTask<VerifyTokenResult> VerifyTokenAsync(XmlReader reader, SoapContext soap)
         {
             WsSecurityLogMessages.LogSecurityTokenElement(Logger, ref reader);
             foreach(var handler in _securityTokenHandlerProvider.GetAllSecurityTokenHandlers())
@@ -228,8 +208,9 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
                 var parameters = await _tokenValidationParametersFactory.CreateAsync();
                 var user = null as ClaimsPrincipal;
-                var token = null as SecurityToken;
-
+                var securityToken = null as SecurityToken;
+                var token = null as string;
+                
                 try
                 {
                     if (handler is IAsyncSecurityTokenHandler asyncHandler)
@@ -238,11 +219,11 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                         if (!result.Success)
                             throw result.Error;
                         user = result.User;
-                        token = result.Token;
+                        securityToken = result.Token;
                     }
                     else
                     {
-                        user = handler.ValidateToken(reader, parameters, out token);
+                        user = handler.ValidateToken(reader, parameters, out securityToken);
                     }
                 }
                 catch (Exception ex)
@@ -251,10 +232,10 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                     continue;
                 }
                 
-                if(user != null && token != null)
+                if(user != null && securityToken != null)
                 {
                     WsSecurityLogMessages.LogSuccessfulSecurityTokenHandlerValidation(Logger, handler);
-                    return (user, token);
+                    return new VerifyTokenResult(user, securityToken);
                 }
             }
             throw soap.CreateInvalidSecurityTokenFault();
@@ -266,86 +247,6 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
                 return asyncHandler.CanReadTokenAsync(reader);
             return new ValueTask<bool>(handler.CanReadToken(reader));
         }
-
-        //private async ValueTask<IEnumerable<(ClaimsPrincipal User, SecurityToken Token)>> VerifyTokensAsync(XDocument document, SoapContext soap)
-        //{
-        //    var elements = document.Root.Elements().Where(e => e.Name != Timestamp && e.Name != Signature);
-        //    var users = new List<(ClaimsPrincipal User, SecurityToken Token)>();
-        //    foreach (var element in elements)
-        //    {
-        //        //WsSecurityLogMessages.LogSecurityTokenElement(Logger, element);
-        //        // using (var reader = element.CreateReader())
-        //        // The preceding code doesn't work for SamlSecurityTokenHandler.
-        //        // The following hack is extremely shaky. We're assuming that all signed SAML tokens are arriving unformatted. 
-        //        // Let's hope Microsoft accepts our PR.
-        //        // https://github.com/AzureAD/azure-activedirectory-identitymodel-extensions-for-dotnet/pull/1437
-        //        var xml = element.ToString(SaveOptions.DisableFormatting);
-        //        using (var reader = XmlReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(xml))))
-        //        {
-        //            reader.MoveToContent();
-        //            var handled = false;
-        //            foreach (var handler in _securityTokenHandlerProvider.GetAllSecurityTokenHandlers())
-        //            {
-        //                if (!handler.CanValidateToken) continue;
-
-        //                var parameters = _tokenValidationParametersFactory.Create();
-
-        //                if (handler is IAsyncSecurityTokenHandler asyncHandler && await asyncHandler.CanReadTokenAsync(reader))
-        //                {
-        //                    WsSecurityLogMessages.LogSecurityTokenHandlerValidationAttempt(Logger, handler);
-
-        //                    try
-        //                    {
-        //                        var result = await asyncHandler.ValidateTokenAsync(reader, parameters);
-        //                        if (!result.Success)
-        //                            throw result.Error;
-        //                        users.Add((result.User, result.Token));
-        //                        WsSecurityLogMessages.LogSuccessfulSecurityTokenHandlerValidation(Logger, handler);
-        //                        handled = true;
-        //                        break;
-        //                    }
-        //                    catch (Exception ex)
-        //                    {
-        //                        WsSecurityLogMessages.LogFailedSecurityTokenHandlerValidation(Logger, handler, ex);
-        //                        continue;
-        //                    }
-        //                }
-        //                else if (handler.CanReadToken(reader))
-        //                {
-        //                    WsSecurityLogMessages.LogSecurityTokenHandlerValidationAttempt(Logger, handler);
-        //                    try
-        //                    {
-        //                        var principal = handler.ValidateToken(reader, parameters, out var token);
-        //                        if (token != null && principal != null)
-        //                        {
-        //                            users.Add((principal, token));
-        //                            WsSecurityLogMessages.LogSuccessfulSecurityTokenHandlerValidation(Logger, handler);
-        //                            handled = true;
-        //                            break;
-        //                        }
-        //                    }
-        //                    catch (Exception ex)
-        //                    {
-        //                        WsSecurityLogMessages.LogFailedSecurityTokenHandlerValidation(Logger, handler, ex);
-        //                        continue;
-        //                    }
-        //                }
-        //            }
-        //            if (!handled)
-        //                throw soap.CreateInvalidSecurityTokenFault();
-        //        }
-        //    }
-        //    return users;
-        //}
-
-        //private void HandleTimestamp(XDocument document, SoapContext context)
-        //{
-        //    var element = document.Root.Element(Timestamp);
-        //    WsSecurityLogMessages.LogTimestampElement(Logger, element);
-        //    var timestamp = ReadTimestamp(element);
-        //    AssertTimestamp(timestamp, context);
-        //    context.SetWsSecurityTimestamp(timestamp);
-        //}
 
         private void HandleTimestamp(XmlReader reader, SoapContext soap)
         {
@@ -371,25 +272,42 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
             return timestamp;
         }
 
-        //private Timestamp ReadTimestamp(XElement element)
-        //{
-        //    var created = element.Element(XName.Get("Created", WsUtilityConstants.WsUtility10.Namespace));
-        //    var expires = element.Element(XName.Get("Expires", WsUtilityConstants.WsUtility10.Namespace));
-        //    var timestamp = new Timestamp
-        //    {
-        //        Id = element.Attributes().FirstOrDefault(a => a.Name == XName.Get("Id", WsUtilityConstants.WsUtility10.Namespace))?.Value,
-        //        Created = DateTime.Parse(created.Value),
-        //        Expires = DateTime.Parse(expires.Value)
-        //    };
-        //    return timestamp;
-        //}
-
         private void AssertTimestamp(Timestamp timestamp, SoapContext context)
         {
             // TODO: add clock skew options
             var now = Clock.UtcNow.UtcDateTime;
             if (timestamp.Created.AddMinutes(-5).ToUniversalTime() > now || timestamp.Expires.ToUniversalTime() < now)
                 throw context.CreateMessageExpiredFault();
+        }
+    }
+
+    internal struct VerifyTokenResult
+    {
+        public ClaimsPrincipal User;
+        public SecurityToken SecurityToken;
+        //public string Token;
+
+        public VerifyTokenResult(ClaimsPrincipal user, SecurityToken securityToken)
+        {
+            User = user;
+            SecurityToken = securityToken;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is VerifyTokenResult other &&
+                   //EqualityComparer<string>.Default.Equals(Token, other.Token) &&
+                   EqualityComparer<ClaimsPrincipal>.Default.Equals(User, other.User) &&
+                   EqualityComparer<SecurityToken>.Default.Equals(SecurityToken, other.SecurityToken);
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = -920644486;
+            hashCode = hashCode * -1521134295 + EqualityComparer<ClaimsPrincipal>.Default.GetHashCode(User);
+            //hashCode = hashCode * -1521134295 + EqualityComparer<ClaimsPrincipal>.Default.GetHashCode(Token);
+            hashCode = hashCode * -1521134295 + EqualityComparer<SecurityToken>.Default.GetHashCode(SecurityToken);
+            return hashCode;
         }
     }
 }
