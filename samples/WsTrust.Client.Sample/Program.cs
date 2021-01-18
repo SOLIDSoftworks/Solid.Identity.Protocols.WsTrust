@@ -18,6 +18,8 @@ namespace WsTrust.Client.Sample
 {
     class Program
     {
+        const int iterations = 1_000_000;
+
         static async Task Main(string[] args)
         {
             IdentityModelEventSource.ShowPII = true;
@@ -53,18 +55,21 @@ namespace WsTrust.Client.Sample
             var factory = new WsTrustChannelFactory(binding, endpoint);
             factory.SecurityTokenHandlers.Add(handler);
 
-            var channel = factory.CreateChannelWithIssuedToken(token);
-
-            var request = new WsTrustRequest(WsTrustConstants.Trust13.WsTrustActions.Issue)
+            for (var i = 0; i < iterations; i++)
             {
-                KeyType = WsTrustKeyTypes.Trust13.Bearer,
-                AppliesTo = new AppliesTo(new EndpointReference("urn:sample:relyingparty"))
-            };
-            var response = await channel.IssueAsync(request);
-            var requestedToken = response.GetRequestedSecurityToken() as GenericXmlSecurityToken;
+                var channel = factory.CreateChannelWithIssuedToken(token);
 
-            var assertion = requestedToken.Element.OuterXml;
-            Console.WriteLine(assertion);
+                var request = new WsTrustRequest(WsTrustConstants.Trust13.WsTrustActions.Issue)
+                {
+                    KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                    AppliesTo = new AppliesTo(new EndpointReference("urn:sample:relyingparty"))
+                };
+                var response = await channel.IssueAsync(request);
+                var requestedToken = response.GetRequestedSecurityToken() as GenericXmlSecurityToken;
+
+                var assertion = requestedToken.Element.OuterXml;
+                Console.WriteLine(assertion);
+            }
             Console.ReadKey();
         }
 
