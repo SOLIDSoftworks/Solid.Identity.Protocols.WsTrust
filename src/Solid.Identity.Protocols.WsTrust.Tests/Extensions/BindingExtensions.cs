@@ -17,9 +17,9 @@ namespace System.ServiceModel.Channels
             if (custom == null)
                 custom = new CustomBinding(binding);
 
-            var security = custom.Elements.OfType<SecurityBindingElement>();
-            foreach (var element in security)
-                element.AllowInsecureTransport = true;
+            //var security = custom.Elements.OfType<SecurityBindingElement>();
+            //foreach (var element in security)
+            //    element.AllowInsecureTransport = true;
 
             var https = custom
                 .Elements

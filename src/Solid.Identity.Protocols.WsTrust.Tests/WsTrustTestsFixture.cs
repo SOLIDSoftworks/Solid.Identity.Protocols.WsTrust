@@ -22,6 +22,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Xunit.Abstractions;
+using Solid.ServiceModel.Security;
+using Solid.IdentityModel.Tokens.Xml;
+using Microsoft.IdentityModel.Protocols.WsTrust;
+using Microsoft.IdentityModel.Tokens.Saml;
+using Microsoft.IdentityModel.Tokens.Saml2;
+using Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens;
 
 #if NET472
 using System.IdentityModel.Protocols.WSTrust;
@@ -41,17 +47,23 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         public X509Certificate2 Certificate { get; }
         public X509Certificate2 ClientCertificate { get; }
 
-        private SecurityTokenHandlerCollection _handlers;
+        private IDictionary<string, SecurityTokenHandler> _handlers;
 
         public WsTrustTestsFixture()
         {
             Certificate = new X509Certificate2(Convert.FromBase64String(Certificates.SigningCertificteBase64));
             ClientCertificate = new X509Certificate2(Convert.FromBase64String(Certificates.ClientCertificateBase64));
 
-            _handlers = new SecurityTokenHandlerCollection();
-            _handlers.Add(new SamlSecurityTokenHandler());
-            _handlers.Add(new Saml2SecurityTokenHandler());
-            _handlers.Add(new GodSecurityTokenHandler());
+            var saml = new SamlSecurityTokenHandler();
+            var saml2 = new Saml2SecurityTokenHandler();
+            var god = new GodSecurityTokenHandler();
+            _handlers = new Dictionary<string, SecurityTokenHandler>
+            {
+                { SamlTokenType, saml },
+                { Saml2TokenType, saml2 },
+                { "urn:god", god },
+                { "urn:deity", god }
+            };
         }
 
         protected override void ConfigureServices(IServiceCollection services)
@@ -76,7 +88,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             ;
         }
         
-        public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate, XmlWriterSettings writerSettings = null, SecurityAlgorithmSuite securityAlgorithmSuite = null)
+        public IWsTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate, XmlWriterSettings writerSettings = null, SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var properties = new Dictionary<string, object>
             {
@@ -87,16 +99,17 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             if (securityAlgorithmSuite != null)
                 properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
 
-            var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
-            var channel = CreateChannel<IWSTrustChannelContract>(context);
+            var context = SoapChannelCreationContext.Create<IWsTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
+            var channel = CreateChannel<IWsTrustChannelContract>(context);
             return channel;
         }
 
-        public IWSTrustChannelContract CreateWsTrust13IssuedTokenClient(string subject, string clientTokenType = Saml2TokenType, string appliesTo = "urn:tests", string issuer = "urn:test:issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
+        public IWsTrustChannelContract CreateWsTrust13IssuedTokenClient(string subject, string clientTokenType = Saml2TokenType, string appliesTo = "urn:tests", string issuer = "urn:test:issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var identity = CreateIdentity(subject);
             var token = CreateSecurityToken(identity, clientTokenType, appliesTo, issuer);
-            var handler = _handlers[clientTokenType];
+            if (!_handlers.TryGetValue(clientTokenType, out var handler))
+                throw new Exception($"Security handler not found for '{clientTokenType}'");
             var properties = new Dictionary<string, object>
             {
                 { "token", token },
@@ -104,12 +117,12 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             };
             if (securityAlgorithmSuite != null)
                 properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
-            var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
-            var channel = CreateChannel<IWSTrustChannelContract>(context);
+            var context = SoapChannelCreationContext.Create<IWsTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
+            var channel = CreateChannel<IWsTrustChannelContract>(context);
             return channel;
         }
 
-        public IWSTrustChannelContract CreateWsTrust13UserNameClient(string userName, string password, string appliesTo = "urn:tests", string issuer = "urn:test:issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
+        public IWsTrustChannelContract CreateWsTrust13UserNameClient(string userName, string password, string appliesTo = "urn:tests", string issuer = "urn:test:issuer", SecurityAlgorithmSuite securityAlgorithmSuite = null)
         {
             var properties = new Dictionary<string, object>
             {
@@ -118,8 +131,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             };
             if (securityAlgorithmSuite != null)
                 properties.Add("securityAlgorithmSuite", securityAlgorithmSuite);
-            var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
-            var channel = CreateChannel<IWSTrustChannelContract>(context);
+            var context = SoapChannelCreationContext.Create<IWsTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
+            var channel = CreateChannel<IWsTrustChannelContract>(context);
             return channel;
         }
 
@@ -144,14 +157,19 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             if (to.IsAssignableFrom(type)) return token;
             if (token is GenericXmlSecurityToken xmlToken)
             {
-                var xml = xmlToken.TokenXml.OuterXml;
+                var xml = xmlToken.Element.OuterXml;
                 using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
                 {
                     using (var reader = XmlReader.Create(stream))
                     {
                         reader.MoveToContent();
-                        if (!_handlers.CanReadToken(reader)) throw new InvalidOperationException("Cannot read token.");
-                        return _handlers.ReadToken(reader);
+                        foreach(var handler in _handlers.Values.Distinct())
+                        {
+                            if (!handler.CanReadToken(reader)) continue;
+                            return handler.ReadToken(reader);
+                        }
+
+                        throw new InvalidOperationException("Cannot read token.");
                     }
                 }
             }
@@ -159,7 +177,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         }
 
         protected override EndpointAddress CreateEndpointAddress<TChannel>(Uri url, SoapChannelCreationContext context)
-            => new EndpointAddress(url, new DnsEndpointIdentity(url.Host), new AddressHeaderCollection());
+            => new EndpointAddress(url);
         
         protected override Binding CreateBinding<TChannel>(SoapChannelCreationContext context)
         {
@@ -193,10 +211,11 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         private Binding CreateFederationBinding(SecurityTokenHandler handler, SoapChannelCreationContext context)
         {
-            var binding = new WS2007FederationHttpBinding(WSFederationHttpSecurityMode.TransportWithMessageCredential);
-            binding.Security.Message.IssuedKeyType = SecurityKeyType.BearerKey;
+            var binding = new WsTrustIssuedTokenBinding();
+
+            binding.KeyType = System.IdentityModel.Tokens.SecurityKeyType.BearerKey;
             binding.Security.Message.EstablishSecurityContext = false;
-            binding.Security.Message.IssuedTokenType = handler.GetTokenTypeIdentifiers().FirstOrDefault();
+            //binding.Security.Message.IssuedTokenType = handler.GetTokenTypeIdentifiers().FirstOrDefault();
 
             if (context.Properties.TryGetValue("securityAlgorithmSuite", out var value) && value is SecurityAlgorithmSuite securityAlgorithmSuite)
                 binding.Security.Message.AlgorithmSuite = securityAlgorithmSuite;
@@ -206,21 +225,21 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         protected override ChannelFactory<TChannel> CreateChannelFactory<TChannel>(Binding binding, EndpointAddress endpointAddress, SoapChannelCreationContext context)
         {
-            var factory = new WSTrustChannelFactory(binding, endpointAddress);
-            factory.TrustVersion = TrustVersion.WSTrust13;
+            var factory = new WsTrustChannelFactory(binding, endpointAddress);
+            factory.TrustVersion = WsTrustVersion.Trust13;
             if (context.Properties.TryGetValue("handler", out var handler))
             {
-                factory.Credentials.UseIdentityConfiguration = true;
-                factory.Credentials.SupportInteractive = false;
-                var handlers = factory.Credentials.SecurityTokenHandlerCollectionManager[SecurityTokenHandlerCollectionManager.Usage.Default];
-                handlers.AddOrReplace(handler as SecurityTokenHandler);
+                var other = factory.SecurityTokenHandlers.FirstOrDefault(h => h.GetType() == handler.GetType());
+                if (other != null)
+                    factory.SecurityTokenHandlers.Remove(other);
+                factory.SecurityTokenHandlers.Add(handler as SecurityTokenHandler);
             }
             return factory as ChannelFactory<TChannel>;
         }
 
         protected override ICommunicationObject CreateChannel<TChannel>(ChannelFactory<TChannel> factory, SoapChannelCreationContext context)
         {
-            if(factory is WSTrustChannelFactory wsTrust)
+            if(factory is WsTrustChannelFactory wsTrust)
             {
                 if (context.Properties.TryGetValue("userName", out var userName) && context.Properties.TryGetValue("password", out var password))
                 {
@@ -253,14 +272,19 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         {
             var descriptor = new SecurityTokenDescriptor
             {
-                AppliesToAddress = appliesTo,
-                TokenIssuerName = issuer,
+                Audience = appliesTo,
+                Issuer = issuer,
                 SigningCredentials = new X509SigningCredentials(ClientCertificate),
-                Lifetime = new Lifetime(DateTime.UtcNow, DateTime.UtcNow.AddHours(1)),
-                Subject = identity,
-                TokenType = tokenTypeIdentifier
+                NotBefore = DateTime.UtcNow,
+                IssuedAt = DateTime.UtcNow,
+                Expires = DateTime.UtcNow.AddHours(1),
+                Subject = identity
             };
-            return _handlers.CreateToken(descriptor);
+
+            if(!_handlers.TryGetValue(tokenTypeIdentifier, out var handler))
+                throw new Exception($"Security handler not found for '{tokenTypeIdentifier}'");
+
+            return handler.CreateToken(descriptor);
         }
     }
 }
