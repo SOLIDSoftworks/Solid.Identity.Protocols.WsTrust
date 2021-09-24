@@ -1,6 +1,7 @@
 ﻿using Microsoft.IdentityModel.Protocols.WsSecurity;
 using Microsoft.IdentityModel.Protocols.WsTrust;
 using Microsoft.IdentityModel.Tokens;
+using Solid.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,10 +9,9 @@ using System.Xml;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
-    public class RequestedSecurityTokenDescriptor : SecurityTokenDescriptor
+    public class WsTrustSecurityTokenDescriptor : RequestedSecurityTokenDescriptor
     {
         public SecurityToken Token { get; set; }
-        public RequestedProofToken RequestedProofToken { get; set; }
         public SecurityTokenReference AttachedReference { get; set; }
         public SecurityTokenReference UnattachedReference { get; set; }
         public string TokenType { get; set; }
@@ -33,9 +33,6 @@ namespace Solid.Identity.Protocols.WsTrust
             {
                 response.RequestedSecurityToken = new RequestedSecurityToken(Token);
             }
-
-            if(RequestedProofToken != null)
-                response.RequestedProofToken = RequestedProofToken;
 
             if (AttachedReference != null)
                 response.AttachedReference = AttachedReference;

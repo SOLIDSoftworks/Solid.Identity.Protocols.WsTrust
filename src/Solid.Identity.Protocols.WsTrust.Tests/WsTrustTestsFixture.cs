@@ -136,17 +136,6 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             return channel;
         }
 
-        //public IWSTrustChannelContract CreateWsTrust13CertificateClient(X509Certificate2 certificate)
-        //{
-        //    var properties = new Dictionary<string, object>
-        //    {
-        //        { "certificate", certificate }
-        //    };
-        //    var context = SoapChannelCreationContext.Create<IWSTrustChannelContract>(path: "trust/13", MessageVersion.Default, reusable: false, properties: properties);
-        //    var channel = CreateChannel<IWSTrustChannelContract>(context);
-        //    return channel;
-        //}
-
         public T ConvertSecurityToken<T>(SecurityToken token)
             where T : SecurityToken => ConvertSecurityToken(token, typeof(T)) as T;
 

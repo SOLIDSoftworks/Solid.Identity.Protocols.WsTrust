@@ -19,12 +19,24 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Protocols\WsSecurity\Tokens\**" />
+    <EmbeddedResource Remove="Protocols\WsSecurity\Tokens\**" />
+    <None Remove="Protocols\WsSecurity\Tokens\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include=".properties\InternalsVisibleTo.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\UserNameSecurityToken.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\UserNameSecurityTokenHandler.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\WsSecuritySaml2SecurityKeyIdentifierClause.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\WsSecuritySaml2SecurityTokenHandler.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\X509SecurityToken.cs" />
+    <Compile Include="Protocols\WsSecurity\Tokens\X509SecurityTokenHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Protocols.WsTrust" Version="6.8.0" />
     <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.26-beta" />
-    <PackageReference Include="Solid.IdentityModel.Tokens.Saml" Version="0.1.9-beta" />
+    <PackageReference Include="Solid.IdentityModel.Tokens.Saml" Version="1.0.2-beta" />
     <PackageReference Include="System.ServiceModel.Security" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup>

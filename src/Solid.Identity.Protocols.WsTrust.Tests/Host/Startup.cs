@@ -40,9 +40,6 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host
                         options.AddSaml2SecurityTokenHandler();
                         options.AddSecurityTokenHandler(god, god.GetTokenTypeIdentifiers());
 
-                        options.AddSha1Support();
-                        options.AddRsaSha1Support();
-
                         options.AddIdentityProvider("urn:alpha:and:omega", idp =>
                         {
                             idp.Name = "God token";
