@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             });
 
-            services.TryAddSingleton<ICryptoProvider, CustomCryptoProvider>();
+            services.AddCustomCryptoProvider();
             services.TryAddTransient<IncomingClaimsMapper>();
             services.TryAddTransient<OutgoingSubjectFactory>();
             services.TryAddSingleton<RelyingPartyProvider>();

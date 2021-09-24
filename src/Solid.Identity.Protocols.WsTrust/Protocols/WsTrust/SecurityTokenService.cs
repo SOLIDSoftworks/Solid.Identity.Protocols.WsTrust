@@ -22,6 +22,8 @@ using Solid.Identity.Protocols.WsSecurity;
 using System.Security;
 using System.Linq;
 using Solid.Identity.Protocols.WsTrust.Logging;
+using System.Security.Cryptography;
+using Microsoft.IdentityModel.Protocols.XmlEnc;
 
 namespace Solid.Identity.Protocols.WsTrust
 {
@@ -114,14 +116,27 @@ namespace Solid.Identity.Protocols.WsTrust
         public virtual ValueTask<WsTrustResponse> ValidateAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
             => throw new InvalidRequestException(ErrorMessages.ID3141, (request != null && request.RequestType != null ? request.RequestType : "Validate"));
         
-        protected virtual ValueTask<SecurityToken> CreateSecurityTokenAsync(Scope scope, WsTrustRequest request, RequestedSecurityTokenDescriptor descriptor, SecurityTokenHandler handler, CancellationToken cancellationToken)
+        protected virtual ValueTask<SecurityToken> CreateSecurityTokenAsync(Scope scope, WsTrustRequest request, WsTrustSecurityTokenDescriptor descriptor, SecurityTokenHandler handler, CancellationToken cancellationToken)
             => new ValueTask<SecurityToken>(handler.CreateToken(descriptor));
 
-        protected virtual ValueTask<WsTrustResponse> CreateResponseAsync(WsTrustRequest request, RequestedSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
+        protected virtual async ValueTask<WsTrustResponse> CreateResponseAsync(WsTrustRequest request, WsTrustSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
         {
-            if (descriptor == null) return new ValueTask<WsTrustResponse>();
+            if (descriptor == null) return null;
 
             var response = new RequestSecurityTokenResponse();
+            var handler = await GetSecurityTokenHandlerAsync(request.TokenType, cancellationToken);
+
+            try
+            {
+                var attached = handler.CreateSecurityTokenReference(descriptor.Token, true);
+                if (attached is WsSecuritySecurityKeyIdentifierClause attachedClause)
+                    descriptor.AttachedReference = attachedClause.CreateReference();
+
+                var unattached = handler.CreateSecurityTokenReference(descriptor.Token, false);
+                if (unattached is WsSecuritySecurityKeyIdentifierClause unattachedClause)
+                    descriptor.UnattachedReference = unattachedClause.CreateReference();
+            }
+            catch { }
 
             descriptor.ApplyTo(response);
 
@@ -141,7 +156,21 @@ namespace Solid.Identity.Protocols.WsTrust
             if (!string.IsNullOrEmpty(descriptor.Audience))
                 response.AppliesTo = new AppliesTo(new EndpointReference(descriptor.Audience));
 
-            return new ValueTask<WsTrustResponse>(new WsTrustResponse(response));
+            var proofToken = await CreateRequestedProofTokenAsync(descriptor, cancellationToken);
+            if (proofToken != null)
+                response.RequestedProofToken = proofToken;
+
+            return new WsTrustResponse(response);
+        }
+
+        protected virtual ValueTask<RequestedProofToken> CreateRequestedProofTokenAsync(WsTrustSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
+        {
+            if (descriptor.ProofKey == null) return new ValueTask<RequestedProofToken>();
+            if (!(descriptor.ProofKey is SymmetricSecurityKey symmetric)) throw new NotSupportedException($"Asymmetric proof keys not supported for now.");
+
+            // The microsoft ws-trust serializer can't handle encrypted RequestedProofToken. Hard code unencrypted for now.
+            var secret = new BinarySecret(symmetric.Key, Constants.WsTrustKeyTypes.Symmetric);
+            return new ValueTask<RequestedProofToken>(new RequestedProofToken(secret));
         }
 
         private IDictionary<string, IRelyingParty> _cache = new Dictionary<string, IRelyingParty>();
@@ -161,10 +190,10 @@ namespace Solid.Identity.Protocols.WsTrust
             return new ValueTask<SecurityTokenHandler>(handler);
         }
 
-        protected virtual async ValueTask<RequestedSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
+        protected virtual async ValueTask<WsTrustSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
         {
             var lifetime = CreateTokenLifetime(request?.Lifetime, scope);
-            var descriptor = new RequestedSecurityTokenDescriptor
+            var descriptor = new WsTrustSecurityTokenDescriptor
             {
                 Audience = scope.RelyingParty.AppliesTo,
                 IssuedAt = lifetime.Created,
@@ -172,13 +201,69 @@ namespace Solid.Identity.Protocols.WsTrust
                 Issuer = scope.RelyingParty.ExpectedIssuer ?? Options.Issuer,
                 SigningCredentials = scope.SigningCredentials,
                 EncryptingCredentials = scope.RelyingParty.RequiresEncryptedToken ? scope.EncryptingCredentials : null,
-                TokenType = request.TokenType,
+                ProofKeyEncryptingCredentials = scope.RelyingParty.RequiresEncryptedSymmetricKeys ? scope.EncryptingCredentials : null,
+                TokenType = request.TokenType
             };
 
             if (lifetime.Created != null)
                 descriptor.NotBefore = lifetime.Created.Value.Subtract(scope.RelyingParty.ClockSkew ?? Options.MaxClockSkew);
+            
+            var requestorProofEncryptingCredentials = await GetRequestorProofEncryptingCredentialsAsync(request, cancellationToken);
+            if (requestorProofEncryptingCredentials != null)
+                descriptor.ProofKeyEncryptingCredentials = requestorProofEncryptingCredentials;
+            descriptor.ProofKey = await CreateProofKeyAsync(request, scope, descriptor, cancellationToken);
 
             return descriptor;
+        }
+
+        protected virtual async ValueTask<SecurityKey> CreateProofKeyAsync(WsTrustRequest request, Scope scope, WsTrustSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
+        {
+            var keyType = request.KeyType;
+
+            // asymmetric and psha1
+            // not supported at this moment
+            if (keyType == Constants.WsTrustKeyTypes.PublicKey || keyType == Constants.WsTrustKeyTypes.PSHA1)
+                throw new NotSupportedException($"Key type '{keyType}' not supported at this time.");
+
+            if (keyType == Constants.WsTrustKeyTypes.Bearer)
+                return null;
+
+            // symmetric
+            if (request.ComputedKeyAlgorithm != null && request.ComputedKeyAlgorithm != "http://schemas.microsoft.com/idfx/computedkeyalgorithm/psha1")
+                throw new NotSupportedException($"Computed key algortihm '{request.ComputedKeyAlgorithm}' not supported at this time.");
+
+            if (descriptor.ProofKeyEncryptingCredentials == null && scope.RelyingParty.RequiresEncryptedSymmetricKeys)
+                throw new InvalidOperationException("Cannot created proof token with no encrypting credentials.");
+
+            if (scope.EncryptingCredentials == null && scope.RelyingParty.RequiresEncryptedToken)
+                throw new InvalidOperationException("Missing encrypting credentials.");
+
+            return await CreateSymmetricProofKeyAsync(request.KeySizeInBits.Value);
+        }
+
+        protected virtual async ValueTask<SymmetricSecurityKey> CreateSymmetricProofKeyAsync(int keySizeInBits)
+        {
+            var keySizeInBytes = keySizeInBits / 8;
+            var remainder = keySizeInBits % 8;
+            if (keySizeInBytes <= 0)
+                throw new ArgumentOutOfRangeException(nameof(keySizeInBits));
+            if (remainder > 0)
+                throw new ArgumentException("Argument must be divisible by 8.", nameof(keySizeInBits));
+
+            using (var random = await CreateRandomNumberGeneratorAsync())
+            {
+                var key = new byte[keySizeInBytes];
+                random.GetNonZeroBytes(key);
+                return new SymmetricSecurityKey(key);
+            }
+        }
+
+        protected virtual ValueTask<EncryptingCredentials> GetRequestorProofEncryptingCredentialsAsync(WsTrustRequest request, CancellationToken cancellationToken)
+        {
+            if (request.ProofEncryption == null)
+                return new ValueTask<EncryptingCredentials>();
+
+            throw new NotSupportedException("Requestor proof encryption not supported at this time.");
         }
 
         protected virtual ValueTask<SigningCredentials> CreateSigningCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
@@ -425,6 +510,8 @@ namespace Solid.Identity.Protocols.WsTrust
             if (request.KeyType == Constants.WsTrustKeyTypes.Symmetric && !request.KeySizeInBits.HasValue)
                 request.KeySizeInBits = Options.DefaultSymmetricKeySizeInBits;
         }
+
+        protected virtual ValueTask<RandomNumberGenerator> CreateRandomNumberGeneratorAsync() => new ValueTask<RandomNumberGenerator>(new RNGCryptoServiceProvider());
 
         internal void Initialize(WsTrustConstants constants)
             => Constants = constants;

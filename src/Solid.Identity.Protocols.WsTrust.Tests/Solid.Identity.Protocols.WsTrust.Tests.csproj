@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net472</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -16,10 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Solid.Identity.Protocols.WsTrust\Solid.Identity.Protocols.WsTrust.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'net472'">
-    <Reference Include="System.Net.Http" />
+    <ProjectReference Include="..\Solid.ServiceModel.Security.WsTrust\Solid.ServiceModel.Security.WsTrust.csproj" />
   </ItemGroup>
 
 </Project>

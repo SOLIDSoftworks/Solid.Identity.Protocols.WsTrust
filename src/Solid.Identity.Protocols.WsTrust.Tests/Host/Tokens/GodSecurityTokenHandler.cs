@@ -1,4 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Saml;
+using Microsoft.IdentityModel.Tokens.Saml2;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -49,7 +51,7 @@ namespace Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, god.Name, ClaimValueTypes.String, token.Issuer),
-                new Claim(ClaimTypes.AuthenticationMethod, System.IdentityModel.Tokens.AuthenticationMethods.Unspecified, god.Name, ClaimValueTypes.String, token.Issuer),
+                new Claim(ClaimTypes.AuthenticationMethod, SamlConstants.AuthenticationMethods.UnspecifiedString, god.Name, ClaimValueTypes.String, token.Issuer),
                 new Claim(ClaimTypes.AuthenticationInstant, XmlConvert.ToString(DateTime.UtcNow, "yyyy-MM-ddTHH:mm:ss.fffZ"), ClaimValueTypes.DateTime, token.Issuer),
                 new Claim("urn:god:type", god.Type, god.Name, ClaimValueTypes.String, token.Issuer)
             };

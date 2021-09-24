@@ -1,7 +1,12 @@
+using Microsoft.IdentityModel.Protocols.WsAddressing;
+using Microsoft.IdentityModel.Protocols.WsPolicy;
+using Microsoft.IdentityModel.Protocols.WsTrust;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens.Saml;
+using Microsoft.IdentityModel.Tokens.Saml2;
+using Solid.Identity.Protocols.WsTrust.Tests.Host.Tokens;
 using System;
 using System.Collections.Generic;
-using System.IdentityModel.Protocols.WSTrust;
-using System.IdentityModel.Tokens;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -28,32 +33,31 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         }
 
         [Fact]
-        public void ShouldValidateIssuerAsAudience()
+        public async Task ShouldValidateIssuerAsAudience()
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", appliesTo: WsTrustTestsFixture.Issuer);
-            var token = client.Issue(request, out _);
+            var token = await client.IssueAsync(request);
 
             Assert.NotNull(token);
         }
 
         [Fact]
-        public void ShouldValidateRequestUrlAsAudience()
+        public async Task ShouldValidateRequestUrlAsAudience()
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", appliesTo: $"{_fixture.TestingServer.BaseAddress}trust/13");
-            var token = client.Issue(request, out _);
+            var response = await client.IssueAsync(request);
 
+            var token = response.GetRequestedSecurityToken();
             Assert.NotNull(token);
         }
 
@@ -62,55 +66,54 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
         [InlineData(WsTrustTestsFixture.Saml2TokenType)]
         [InlineData("urn:god")]
         [InlineData("urn:deity")]
-        public void ShouldValidateToken(string clientTokenType)
+        public async Task ShouldValidateToken(string clientTokenType)
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", clientTokenType: clientTokenType);
-            var token = client.Issue(request, out _);
+            var response = await client.IssueAsync(request);
 
+            var token = response.GetRequestedSecurityToken();
             Assert.NotNull(token);
         }
 
         [Theory]
         [InlineData(WsTrustTestsFixture.SamlTokenType)]
         [InlineData(WsTrustTestsFixture.Saml2TokenType)]
-        public void ShouldValidateTokenWithEmbeddedCertificate(string clientTokenType)
+        public async Task ShouldValidateTokenWithEmbeddedCertificate(string clientTokenType)
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName", issuer: "urn:test:issuer:embedded_cert", clientTokenType: clientTokenType);
-            var token = client.Issue(request, out _);
+            var response = await client.IssueAsync(request);
 
+            var token = response.GetRequestedSecurityToken();
             Assert.NotNull(token);
         }
 
         [Theory]
         [InlineData(Certificates.ValidBase64)]
-        public void ShouldNotValidateAlteredSignedToken(string base64)
+        public async Task ShouldNotValidateAlteredSignedToken(string base64)
         {
             using (var certificate = new X509Certificate2(Convert.FromBase64String(base64)))
             {
-                var request = new RequestSecurityToken
+                var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
                 {
-                    RequestType = RequestTypes.Issue,
-                    KeyType = KeyTypes.Bearer,
-                    AppliesTo = new EndpointReference("urn:tests")
+                    KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                    AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
                 };
                 var settings = new XmlWriterSettings { Indent = true };
                 var client = _fixture.CreateWsTrust13CertificateClient(certificate, settings);
                 var exception = null as Exception;
                 try
                 {
-                    _ = client.Issue(request, out _);
+                    _ = await client.IssueAsync(request);
                 }
                 catch (Exception ex)
                 {
@@ -124,13 +127,12 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         [Theory]
         [MemberData(nameof(ShouldGetTokenWithUserNameData))]
-        public void ShouldGetTokenWithUserName(GetTokenWithUserNameData data)
+        public async Task ShouldGetTokenWithUserName(GetTokenWithUserNameData data)
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             var client = _fixture.CreateWsTrust13UserNameClient(data.UserName, data.Password);
 
@@ -138,7 +140,8 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             var token = null as SecurityToken;
             try
             {
-                token = client.Issue(request, out _);
+                var response = await client.IssueAsync(request);
+                token = response.GetRequestedSecurityToken();
             }
             catch (Exception ex)
             {
@@ -158,23 +161,23 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         [Theory]
         [MemberData(nameof(ShouldGetTokenWithCertificateData))]
-        public void ShouldGetTokenWithCertificate(GetTokenWithCertificateData data)
+        public async Task ShouldGetTokenWithCertificate(GetTokenWithCertificateData data)
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests")
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests"))
             };
             using (var certificate = new X509Certificate2(Convert.FromBase64String(data.CertificateBase64)))
             {
-                var client = _fixture.CreateWsTrust13CertificateClient(certificate, securityAlgorithmSuite: data.SecurityAlgorithmSuite);
+                var client = _fixture.CreateWsTrust13CertificateClient(certificate);
 
                 var exception = null as Exception;
                 var token = null as SecurityToken;
                 try
                 {
-                    token = client.Issue(request, out _);
+                    var response = await client.IssueAsync(request);
+                    token = response.GetRequestedSecurityToken();
                 }
                 catch (Exception ex)
                 {
@@ -196,17 +199,18 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
 
         [Theory]
         [MemberData(nameof(ShouldGetTokenData))]
-        public void ShouldGetToken(GetTokenData data)
+        public async Task ShouldGetToken(GetTokenData data)
         {
-            var request = new RequestSecurityToken
+            var request = new WsTrustRequest(WsTrustActions.Trust13.Issue)
             {
-                RequestType = RequestTypes.Issue,
-                KeyType = KeyTypes.Bearer,
-                AppliesTo = new EndpointReference("urn:tests"),
+                KeyType = WsTrustKeyTypes.Trust13.Bearer,
+                AppliesTo = new AppliesTo(new EndpointReference("urn:tests")),
                 TokenType = data.TokenTypeIdentifier
             };
             var client = _fixture.CreateWsTrust13IssuedTokenClient("userName");
-            var token = client.Issue(request, out _);
+            var response = await client.IssueAsync(request);
+
+            var token = response.GetRequestedSecurityToken();
 
             Assert.NotNull(token);
             data.AssertToken(_fixture, token);
@@ -239,41 +243,41 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             {
                 Subject = "test.valid",
                 CertificateBase64 = Certificates.ValidBase64,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.valid",
                 CertificateBase64 = Certificates.ValidBase64,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.expired",
                 CertificateBase64 = Certificates.ExpiredBase64,
                 ShouldFail = true,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.expired",
                 CertificateBase64 = Certificates.ExpiredBase64,
                 ShouldFail = true,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.invalid",
                 CertificateBase64 = Certificates.InvalidBase64,
                 ShouldFail = true,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic128
             },
             new GetTokenWithCertificateData
             {
                 Subject = "test.invalid",
                 CertificateBase64 = Certificates.InvalidBase64,
                 ShouldFail = true,
-                SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
+                //SecurityAlgorithmSuite = SecurityAlgorithmSuite.Basic256Sha256
             }
         };
 
@@ -306,14 +310,14 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
             public string CertificateBase64 { get; set; }
             public bool ShouldFail { get; set; }
             public string Subject { get; set; }
-            public SecurityAlgorithmSuite SecurityAlgorithmSuite { get; set; }
+            //public SecurityAlgorithmSuite SecurityAlgorithmSuite { get; set; }
 
             void IXunitSerializable.Serialize(IXunitSerializationInfo info)
             {
                 info.AddValue(nameof(Subject), Subject);
                 info.AddValue(nameof(ShouldFail), ShouldFail);
                 info.AddValue(nameof(CertificateBase64), CertificateBase64);
-                info.AddValue(nameof(SecurityAlgorithmSuite), SecurityAlgorithmSuite?.ToString());
+                //info.AddValue(nameof(SecurityAlgorithmSuite), SecurityAlgorithmSuite?.ToString());
             }
 
             void IXunitSerializable.Deserialize(IXunitSerializationInfo info)
@@ -321,9 +325,9 @@ namespace Solid.Identity.Protocols.WsTrust.Tests
                 Subject = info.GetValue<string>(nameof(Subject));
                 ShouldFail = info.GetValue<bool>(nameof(ShouldFail));
                 CertificateBase64 = info.GetValue<string>(nameof(CertificateBase64));
-                var securityAlgorithmSuite = info.GetValue<string>(nameof(SecurityAlgorithmSuite));
-                if (securityAlgorithmSuite != null)
-                    SecurityAlgorithmSuite = typeof(SecurityAlgorithmSuite).GetProperty(securityAlgorithmSuite, BindingFlags.Static | BindingFlags.Public).GetValue(null) as SecurityAlgorithmSuite;
+                //var securityAlgorithmSuite = info.GetValue<string>(nameof(SecurityAlgorithmSuite));
+                //if (securityAlgorithmSuite != null)
+                //    SecurityAlgorithmSuite = typeof(SecurityAlgorithmSuite).GetProperty(securityAlgorithmSuite, BindingFlags.Static | BindingFlags.Public).GetValue(null) as SecurityAlgorithmSuite;
             }
         }
 
