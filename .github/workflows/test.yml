@@ -1,0 +1,30 @@
+name: test
+on:
+  push:
+    paths:
+      - ".github/**/*.*" 
+      - "src/**/*.*"
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+env:
+  DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: '2'
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: setup_dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.200 
+          
+      - name: install_dependencies
+        run: dotnet restore ./src
+        
+      - name: build
+        run: dotnet build ./src --configuration Release --no-restore
+        
+      - name: test
+        run: dotnet test ./src --configuration Release --no-restore --no-build

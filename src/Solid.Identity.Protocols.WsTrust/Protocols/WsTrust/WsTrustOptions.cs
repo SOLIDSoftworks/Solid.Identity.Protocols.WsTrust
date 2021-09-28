@@ -52,41 +52,6 @@ namespace Solid.Identity.Protocols.WsTrust
             return this;
         }
 
-        public WsTrustOptions AddSupportedHashAlgorithm(string algorithm, Func<IServiceProvider, HashAlgorithm> factory)
-        {
-            SupportedHashAlgorithms[algorithm] = new HashAlgorithmDescriptor(algorithm, (services, _) => factory(services));
-            return this;
-        }
-
-        public WsTrustOptions AddSupportedSignatureAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, bool, SignatureProvider> factory)
-        {
-            SupportedSignatureAlgorithms[algorithm] = new SignatureProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey, (bool)args[1]));
-            return this;
-        }
-
-        public WsTrustOptions AddSupportedKeyWrapAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, bool, KeyWrapProvider> factory)
-        {
-            SupportedKeyWrapAlgorithms[algorithm] = new KeyWrapProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey, (bool)args[1]));
-            return this;
-        }
-
-        public WsTrustOptions AddSupportedKeyedHashAlgorithm(string algorithm, Func<IServiceProvider, byte[], KeyedHashAlgorithm> factory)
-        {
-            SupportedKeyedHashAlgorithms[algorithm] = new KeyedHashAlgorithmDescriptor(algorithm, (services, args) => factory(services, args[0] as byte[]));
-            return this;
-        }
-
-        public WsTrustOptions AddSupportedEncryptionAlgorithm(string algorithm, Func<IServiceProvider, SecurityKey, AuthenticatedEncryptionProvider> factory)
-        {
-            SupportedEncryptionAlgorithms[algorithm] = new AuthenticatedEncryptionProviderDescriptor(algorithm, (services, args) => factory(services, args[0] as SecurityKey));
-            return this;
-        }
-
-        internal IDictionary<string, HashAlgorithmDescriptor> SupportedHashAlgorithms { get; } = new Dictionary<string, HashAlgorithmDescriptor>();
-        internal IDictionary<string, SignatureProviderDescriptor> SupportedSignatureAlgorithms { get; } = new Dictionary<string, SignatureProviderDescriptor>();
-        internal IDictionary<string, KeyWrapProviderDescriptor> SupportedKeyWrapAlgorithms { get; } = new Dictionary<string, KeyWrapProviderDescriptor>();
-        internal IDictionary<string, KeyedHashAlgorithmDescriptor> SupportedKeyedHashAlgorithms { get; } = new Dictionary<string, KeyedHashAlgorithmDescriptor>();
-        internal IDictionary<string, AuthenticatedEncryptionProviderDescriptor> SupportedEncryptionAlgorithms { get; } = new Dictionary<string, AuthenticatedEncryptionProviderDescriptor>();
         internal IDictionary<string, IRelyingParty> RelyingParties { get; } = new Dictionary<string, IRelyingParty>();
 
         internal IDictionary<string, IIdentityProvider> IdentityProviders { get; } = new Dictionary<string, IIdentityProvider>();
