@@ -1,5 +1,4 @@
-﻿#if NETCOREAPP3_1
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.IdentityModel.Tokens;
@@ -28,4 +27,3 @@ namespace Microsoft.Extensions.DependencyInjection
         }
     }
 }
-#endif

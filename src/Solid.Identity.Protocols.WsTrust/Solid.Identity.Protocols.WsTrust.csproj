@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
     <RootNamespace>Solid.Identity</RootNamespace>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <Authors>SOLID Softworks</Authors>
     <Copyright>© SOLID Softworks. All rights reserved.</Copyright>
     <OutputTypeEx>library</OutputTypeEx>
@@ -12,27 +12,7 @@
     <RepositoryUrl>https://github.com/SOLIDSoftworks/Solid.Identity.Protocols.WsTrust</RepositoryUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.1.2" />
-    <PackageReference Include="System.Text.Json" Version="4.7.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Protocols\WsSecurity\Tokens\**" />
-    <EmbeddedResource Remove="Protocols\WsSecurity\Tokens\**" />
-    <None Remove="Protocols\WsSecurity\Tokens\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include=".properties\InternalsVisibleTo.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\UserNameSecurityToken.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\UserNameSecurityTokenHandler.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\WsSecuritySaml2SecurityKeyIdentifierClause.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\WsSecuritySaml2SecurityTokenHandler.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\X509SecurityToken.cs" />
-    <Compile Include="Protocols\WsSecurity\Tokens\X509SecurityTokenHandler.cs" />
-  </ItemGroup>
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.IdentityModel.Protocols.WsTrust" Version="6.8.0" />
     <PackageReference Include="Solid.Extensions.AspNetCore.Soap" Version="1.0.26-beta" />
