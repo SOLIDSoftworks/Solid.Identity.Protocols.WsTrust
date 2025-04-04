@@ -69,6 +69,8 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
 
         public UserNameSecurityToken ReadUsernameToken(XmlReader reader)
         {
+            
+            using var activity = Tracing.WsSecurity.Tokens.StartActivity($"{nameof(UserNameSecurityTokenHandler)}.{nameof(ReadUsernameToken)}");
             if (!CanReadToken(reader))
                 throw new Exception("Token read exception");
 
@@ -97,6 +99,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
 
         public override async ValueTask<SecurityTokenValidationResult> ValidateTokenAsync(XmlReader securityToken, TokenValidationParameters validationParameters)
         {
+            using var activity = Tracing.WsSecurity.Tokens.StartActivity($"{nameof(UserNameSecurityTokenHandler)}.{nameof(ValidateTokenAsync)}");
             if (!CanValidateToken) return null;
             var token = ReadUsernameToken(securityToken);
             try

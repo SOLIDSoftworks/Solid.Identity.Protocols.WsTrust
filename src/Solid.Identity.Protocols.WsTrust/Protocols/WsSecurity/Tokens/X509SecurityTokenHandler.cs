@@ -71,6 +71,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
 
         public X509SecurityToken ReadX509Certificate2Token(XmlReader reader)
         {
+            using var activity = Tracing.WsSecurity.Tokens.StartActivity($"{nameof(X509SecurityTokenHandler)}.{nameof(ReadX509Certificate2Token)}");
             if (!CanReadToken(reader))
                 throw new Exception("Token read exception");
 
@@ -91,6 +92,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Tokens
         public override async ValueTask<SecurityTokenValidationResult> ValidateTokenAsync(XmlReader securityToken, TokenValidationParameters validationParameters)
         {
             if (!CanValidateToken) return null;
+            using var activity = Tracing.WsSecurity.Tokens.StartActivity($"{nameof(X509SecurityTokenHandler)}.{nameof(ValidateTokenAsync)}");
             var token = ReadX509Certificate2Token(securityToken);
             try
             {

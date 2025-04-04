@@ -26,6 +26,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Middleware
 
         protected override async ValueTask InvokeAsync(SoapContext context)
         {
+            using var activity = Tracing.WsSecurity.Base.StartActivity($"{nameof(WsSecurityMiddleware)}.{nameof(InvokeAsync)}");
             var authentication = context.RequestServices.GetService<IAuthenticationService>();
             var result = await authentication.AuthenticateAsync(context.HttpContext, "WS-Security");
             if (result.Failure != null)

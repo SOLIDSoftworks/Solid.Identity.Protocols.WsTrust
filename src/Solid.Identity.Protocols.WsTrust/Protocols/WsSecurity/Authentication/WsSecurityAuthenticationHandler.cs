@@ -54,6 +54,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            using var activity = Tracing.WsSecurity.Base.StartActivity($"{nameof(WsSecurityAuthenticationHandler)}.{nameof(HandleAuthenticateAsync)}");
             var soap = _soapContextAccessor.SoapContext;
             if (soap == null) return AuthenticateResult.NoResult();
 
@@ -138,6 +139,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
         private Signature ReadSignature(XmlReader reader, SoapContext soap)
         {
+            using var activity = Tracing.WsSecurity.Base.StartActivity($"{nameof(WsSecurityAuthenticationHandler)}.{nameof(ReadSignature)}");
             WsSecurityLogMessages.LogSignatureElement(Logger, ref reader);
 
             using var buffer = soap.Request.CreateBufferedCopy((int)(soap.HttpContext.Request.ContentLength ?? 64 * 1024));
@@ -198,6 +200,7 @@ namespace Solid.Identity.Protocols.WsSecurity.Authentication
 
         private async ValueTask<VerifyTokenResult> VerifyTokenAsync(XmlReader reader, SoapContext soap)
         {
+            using var activity = Tracing.WsSecurity.Base.StartActivity($"{nameof(WsSecurityAuthenticationHandler)}.{nameof(VerifyTokenAsync)}");
             WsSecurityLogMessages.LogSecurityTokenElement(Logger, ref reader);
             foreach(var handler in _securityTokenHandlerProvider.GetAllSecurityTokenHandlers())
             {

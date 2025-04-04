@@ -12,12 +12,18 @@ namespace Solid.Identity.Protocols.WsSecurity.Xml
 {
     class WsUtilityDSigSerializer : DSigSerializer
     {
-        private List<Reference> _references = new List<Reference>();
-        private XmlReader _document;
+        private readonly List<Reference> _references = new List<Reference>();
+        private readonly XmlReader _document;
 
         public WsUtilityDSigSerializer(XmlReader document)
         {
             _document = document;
+        }
+
+        public override Signature ReadSignature(XmlReader reader)
+        {
+            using var activity = Tracing.WsSecurity.Xml.StartActivity($"{nameof(WsUtilityDSigSerializer)}.{nameof(ReadSignature)}");
+            return base.ReadSignature(reader);
         }
 
         public override Reference ReadReference(XmlReader reader)
