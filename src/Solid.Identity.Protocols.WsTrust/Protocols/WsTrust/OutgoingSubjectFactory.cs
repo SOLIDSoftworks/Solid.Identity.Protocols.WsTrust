@@ -34,6 +34,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public async ValueTask<ClaimsIdentity> CreateOutgoingSubjectAsync(ClaimsIdentity identity, IRelyingParty relyingParty, string tokenType)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{nameof(OutgoingSubjectFactory)}.{nameof(CreateOutgoingSubjectAsync)}");
             var claims = new List<Claim>();
 
             var required = relyingParty.RequiredClaims ?? Enumerable.Empty<string>();

@@ -48,6 +48,8 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<Message> ProcessCoreAsync(Message requestMessage, string requestAction, string responseAction, WsTrustVersion version)
         {
+            using var coreActivity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(ProcessCoreAsync)}");
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{requestAction}");
             var constants = GetWsTrustConstants(version);
 
             var trace = new WsTrustMessageInformation
@@ -92,6 +94,7 @@ namespace Solid.Identity.Protocols.WsTrust
         /// that determine the response message and action.</param>
         protected virtual async ValueTask DispatchRequestAsync(DispatchContext dispatchContext, WsTrustConstants constants)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(DispatchRequestAsync)}");
             var request = dispatchContext.RequestMessage as WsTrustRequest;
             var action = dispatchContext.RequestAction;
             var sts = dispatchContext.SecurityTokenService;

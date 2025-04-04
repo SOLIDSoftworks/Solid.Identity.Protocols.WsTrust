@@ -25,6 +25,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public async ValueTask<IEnumerable<Claim>> MapIncomingClaimsAsync(IEnumerable<Claim> claims)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{nameof(IncomingClaimsMapper)}.{nameof(MapIncomingClaimsAsync)}");
             var mapped = new List<Claim>();
 
             if (_mappers.TryGetValue("*", out var global))

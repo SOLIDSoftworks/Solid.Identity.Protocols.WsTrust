@@ -10,6 +10,10 @@ namespace Solid.Identity
             public static ActivitySource Tokens { get; } = new (Names.WsSecurity.Tokens, GenerateAssemblyVersion());
             public static ActivitySource Xml { get; } = new (Names.WsSecurity.Xml, GenerateAssemblyVersion());
         }
+        public static class WsTrust
+        {
+            public static ActivitySource Base { get; } = new (Names.WsTrust.Base, GenerateAssemblyVersion());
+        }
         
         public static class Names
         {

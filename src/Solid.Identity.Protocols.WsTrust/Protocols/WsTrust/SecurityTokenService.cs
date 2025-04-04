@@ -65,6 +65,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public virtual async ValueTask<WsTrustResponse> IssueAsync(ClaimsPrincipal principal, WsTrustRequest request, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(IssueAsync)}");
             // currently we only support RST/RSTR pattern
             if (request == null)
                 throw new InvalidRequestException("ID2051");
@@ -186,12 +187,14 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual ValueTask<SecurityTokenHandler> GetSecurityTokenHandlerAsync(string tokenType, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(GetSecurityTokenHandlerAsync)}");
             var handler = SecurityTokenHandlerProvider.GetSecurityTokenHandler(tokenType);
             return new ValueTask<SecurityTokenHandler>(handler);
         }
 
         protected virtual async ValueTask<WsTrustSecurityTokenDescriptor> CreateSecurityTokenDescriptorAsync(WsTrustRequest request, Scope scope, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateSecurityTokenDescriptorAsync)}");
             var lifetime = CreateTokenLifetime(request?.Lifetime, scope);
             var descriptor = new WsTrustSecurityTokenDescriptor
             {
@@ -218,6 +221,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<SecurityKey> CreateProofKeyAsync(WsTrustRequest request, Scope scope, WsTrustSecurityTokenDescriptor descriptor, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateProofKeyAsync)}");
             var keyType = request.KeyType;
 
             // asymmetric and psha1
@@ -243,6 +247,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<SymmetricSecurityKey> CreateSymmetricProofKeyAsync(int keySizeInBits)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateSymmetricProofKeyAsync)}");
             var keySizeInBytes = keySizeInBits / 8;
             var remainder = keySizeInBits % 8;
             if (keySizeInBytes <= 0)
@@ -268,6 +273,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual ValueTask<SigningCredentials> CreateSigningCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateSigningCredentialsAsync)}");
             var key = party.SigningKey;
             var method = party.SigningAlgorithm ?? Options.DefaultSigningAlgorithm;
 
@@ -295,6 +301,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual ValueTask<EncryptingCredentials> CreateEncryptingCredentialsAsync(IRelyingParty party, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateEncryptingCredentialsAsync)}");
             if (!party.RequiresEncryptedToken && !party.RequiresEncryptedSymmetricKeys) return new ValueTask<EncryptingCredentials>();
 
             var key = party.EncryptingKey;
@@ -326,6 +333,7 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             if (identityProvider.RestrictRelyingParties)
             {
+                using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(ValidateIdentityProviderAsync)}");
                 var appliesTo = request.AppliesTo.EndpointReference.Uri;
                 if (!identityProvider.AllowedRelyingParties.Contains(appliesTo))
                     throw new SecurityException($"Identity provider ({identityProvider.Id}) attempting to request token for: {appliesTo}");
@@ -334,6 +342,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask ValidateRelyingPartyAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(ValidateRelyingPartyAsync)}");
             var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
             var appliesTo = request.AppliesTo.EndpointReference.Uri;
             if (party.ValidateRequestedTokenType && !party.SupportedTokenTypes.Contains(request.TokenType))
@@ -347,6 +356,7 @@ namespace Solid.Identity.Protocols.WsTrust
         {
             // TODO: add virtual methods for each validation so they can be overridden seperately
 
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(ValidateRequestAsync)}");
             var issuer = principal.FindFirst(WsSecurityClaimTypes.Issuer)?.Value;
             if (issuer != null)
             {
@@ -405,6 +415,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         protected virtual async ValueTask<Scope> CreateScopeAsync(ClaimsPrincipal principal, WsTrustRequest request, IRelyingParty party, CancellationToken cancellationToken)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{GetType().Name}.{nameof(CreateScopeAsync)}");
             var identity = ClaimsPrincipal.PrimaryIdentitySelector(principal.Identities);
             var claims = await MapIncomingClaimsAsync(principal.Claims);
             var user = new ClaimsIdentity(claims, identity.AuthenticationType, identity.NameClaimType, identity.RoleClaimType);

@@ -26,6 +26,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public async Task<IEnumerable<IRelyingParty>> GetRelyingPartiesAsync()
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{nameof(RelyingPartyProvider)}.{nameof(GetRelyingPartiesAsync)}");
             _logger.LogInformation("Getting all relying parties.");
             if (_store == null)
             {
@@ -38,6 +39,7 @@ namespace Solid.Identity.Protocols.WsTrust
 
         public async Task<IRelyingParty> GetRelyingPartyAsync(string appliesTo)
         {
+            using var activity = Tracing.WsTrust.Base.StartActivity($"{nameof(RelyingPartyProvider)}.{nameof(GetRelyingPartyAsync)}");
             _logger.LogInformation($"Searching for relying party: {appliesTo}");
             if(_store != null)
             {
